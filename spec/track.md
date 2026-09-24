@@ -38,7 +38,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Amendment A1 (board acts, hand-off results, delegation).
   - A companion-app signer provider.
 - **curator-playbook.**
-  - Processes, confirmation of authority-bearing sections, hand-off, delegation, standing answers.
+  - Processes, confirmation of every process change (DRAFT v3.5 §2.4), hand-off, delegation, standing answers.
 - **curator-inference-manager.**
   - The first-run local model.
 - **The companion app.**

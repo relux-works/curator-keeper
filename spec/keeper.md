@@ -18,7 +18,7 @@ Markers:
 - **pending operator decision**: named where it applies.
 
 Related documents:
-- curator-playbook `spec/process-configuration.md`, DRAFT v3.3: processes, root orchestrators, hand-off, delegation, the operator's files and their confirmation;
+- curator-playbook `spec/process-configuration.md`, DRAFT v3.5: processes, root orchestrators, hand-off, delegation, the operator's files and their confirmation, and the confirmation of every change to a process (§2.4);
 - waggle `spec/waggle.md` with Amendment A1: messages, doorbell, carriers, leases, board acts;
 - the session-host module's specification (working name `agent-session-host`);
 - curator-spec Decisions 0010 (environment profiles), 0013 and 0019 (launch plans, one construction site) and 0021 (sessions enter through `curator run`, hosted through the `ax` contract);
@@ -383,9 +383,8 @@ When no process takes a request, the main loop matches it against published proc
 ### 9.6 Changing a process *(decided 2026-09-24)*
 
 - A change to a process's rules is a commit to the default branch of the process's repository (curator-playbook §2.4). No pull request and no hosting service is required; a project that uses one may keep it.
-- Authority-bearing sections take effect only after a person confirms the committed version (§11.2). The other sections take effect on commit, and an orchestrator may change them under delegation.
+- A committed change takes effect only after a person confirms it (§11.2). curator-playbook DRAFT v3.5 §2.4 defines the rule: the default is that every change to the process's resolved configuration — its `Playbook.json`, the templates it resolves, the tool providers it binds and its waggle roster — waits for one of the process's confirmers; the kernel runs the last confirmed version in full meanwhile, and one confirmation covers every pending change. Whether a classified variant lets changes that cannot move authority take effect on commit is pending the operator (curator-playbook §17.3 item 13).
 - A process without git applies a new version only through the same confirmation.
-- curator-playbook takes the confirmation rule for authority-bearing sections in its next revision.
 
 ## 10. Supervision and communication
 
