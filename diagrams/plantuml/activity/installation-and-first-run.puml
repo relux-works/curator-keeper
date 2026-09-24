@@ -1,0 +1,47 @@
+@startuml installation-and-first-run
+!include ../_includes/theme.puml
+
+' Installation from zero and the first run of the main loop.
+' Sources: main loop spec DRAFT v0 §6, §11.3; curator-playbook process
+' configuration DRAFT v3.3 §2.3, §8.1; curator-inference-manager.
+
+title Installation and first run
+caption Sources: main loop DRAFT v0 §6, §11.3; process configuration v3.3 §2.3, §8.1
+
+skinparam ActivityBackgroundColor $SERVICE
+skinparam ActivityBorderColor $SERVICE_LINE
+skinparam ActivityDiamondBackgroundColor $COMMITTED
+skinparam ActivityDiamondBorderColor $COMMITTED_LINE
+
+start
+:Install Curator
+(script from the website or Homebrew);
+:Initialize the root directory from the template package:
+Skillfile.json, Playbook.json, keeper.toml, task-board.config.json;
+:Install through Curator:
+keeper skill with the <i>keeper</i> command,
+board, designer and librarian roles (on demand),
+base environment profiles;
+:Initialize the main loop's board and commit the root;
+if (Hardware meets the published minimum?) then (yes)
+  :Install an engine package and a small local model
+  (curator-inference-manager);
+  :Start the main loop on the local model;
+  :Questionnaire: which subscriptions and harnesses?
+  Add runtime bindings; the person logs in;
+else (no)
+  :Authenticate a harness fit for
+  the root-orchestrator role;
+  :Start the main loop on it;
+endif
+:Offer channels: messengers through waggle providers
+(terminal until then: <i>keeper attach</i>);
+:Pair the companion app:
+QR code, keys exchanged and pinned;
+:The person asks; the main loop proposes processes
+from published packages; the designer creates one;
+:The person confirms on the phone;
+:The main loop starts the process's root orchestrator;
+stop
+
+@enduml

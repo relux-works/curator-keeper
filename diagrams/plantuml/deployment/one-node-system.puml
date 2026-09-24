@@ -1,0 +1,129 @@
+@startuml one-node-system
+!include ../_includes/theme.puml
+
+' One node: the main loop in its root directory with the process registry and
+' its own board, the session host, several processes (each its own repository
+' with exactly one root orchestrator), the operator's private files, and the
+' person reaching the main loop through channels and the companion app.
+' Sources: main loop spec DRAFT v0 §3, §5, §7, §10, §11;
+' curator-playbook process configuration DRAFT v3.3 §2.1, §2.3, §6.5.
+
+title One node: the main loop and its processes
+caption Sources: main loop DRAFT v0 §3, §5, §7, §10, §11; process configuration v3.3 §2.1, §2.3, §6.5
+
+hide stereotype
+
+skinparam component<<service>> {
+  BackgroundColor $SERVICE
+  BorderColor $SERVICE_LINE
+}
+skinparam rectangle<<agent>> {
+  BackgroundColor $AGENT
+  BorderColor $AGENT_LINE
+}
+skinparam collections<<agent>> {
+  BackgroundColor $AGENT
+  BorderColor $AGENT_LINE
+}
+skinparam file<<committed>> {
+  BackgroundColor $COMMITTED
+  BorderColor $COMMITTED_LINE
+}
+skinparam database<<committed>> {
+  BackgroundColor $COMMITTED
+  BorderColor $COMMITTED_LINE
+}
+skinparam file<<private>> {
+  BackgroundColor $PRIVATE
+  BorderColor $PRIVATE_LINE
+}
+skinparam actor<<person>> {
+  BackgroundColor $PERSON
+  BorderColor $PERSON_LINE
+}
+skinparam rectangle<<person>> {
+  BackgroundColor $PERSON
+  BorderColor $PERSON_LINE
+}
+skinparam queue<<carrier>> {
+  BackgroundColor $CARRIER
+  BorderColor $CARRIER_LINE
+}
+
+actor "Person" as person <<person>>
+rectangle "Companion app\n(phone)" as app <<person>>
+
+node "Node: one machine" as node {
+
+  folder "Root directory (a git repository)" as root {
+    rectangle "Main loop session\nkeeper skill + <i>keeper</i> command" as mainloop <<agent>>
+    file registry <<committed>> [
+      <b>keeper.toml</b>: process registry
+      ----
+      <b>Playbook.json</b>: the main loop's own process
+      ----
+      <b>Skillfile.json</b>: keeper, designer, librarian, board
+    ]
+    database "Main loop board:\nrequests and answers" as rootboard <<committed>>
+  }
+
+  component "Session host" as sessionhost <<service>>
+  queue "waggle local carrier\n(mailboxes)" as carrier <<carrier>>
+
+  frame "Process: family calendar" as procCal {
+    rectangle "Root orchestrator\n(exactly one)" as rootCal <<agent>>
+    collections "Sub-orchestrators and runs" as runsCal <<agent>>
+    database "Board" as boardCal <<committed>>
+  }
+
+  frame "Process: café" as procCafe {
+    rectangle "Root orchestrator\n(exactly one)" as rootCafe <<agent>>
+    collections "Sub-orchestrators and runs" as runsCafe <<agent>>
+    database "Board" as boardCafe <<committed>>
+  }
+
+  frame "Process: smart home" as procHome {
+    rectangle "Root orchestrator\n(exactly one)" as rootHome <<agent>>
+    database "Board" as boardHome <<committed>>
+  }
+
+  file operatorfiles <<private>> [
+    <b><U+007E>/.curator/</b>: models, runtimes, engines, network
+    (the operator's, never committed)
+  ]
+}
+
+person --> mainloop : terminal (keeper attach)\nor messenger channel
+app <..> mainloop : approvals and\nconfirmations (signed)
+
+mainloop --> registry : reads, proposes changes\n(confirmed by a person)
+mainloop --> rootboard : records requests
+mainloop --> sessionhost : start, wake, park, stop\nroot orchestrators
+mainloop --> carrier : coord requests
+carrier --> rootCal : doorbell, pull
+carrier --> rootCafe : doorbell, pull
+rootCafe ..> carrier : results, questions\nfor the person
+
+sessionhost --> rootCal : hosts
+sessionhost --> rootCafe : hosts
+sessionhost --> rootHome : hosts
+
+rootCal --> runsCal : spawns inside\nits process
+rootCafe --> runsCafe : spawns inside\nits process
+rootCal --> boardCal : writes
+rootCafe --> boardCafe : writes
+rootHome --> boardHome : writes
+
+procCafe .right.> procCal : hand-off only
+
+legend right
+  <b>Invariants</b>
+  • The main loop starts only root orchestrators.
+  • It never writes a process's board.
+  • Processes are separate repositories,
+    reached only by hand-off.
+  • Registry changes take effect
+    after a person confirms them.
+endlegend
+
+@enduml

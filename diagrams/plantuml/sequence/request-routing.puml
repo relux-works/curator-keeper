@@ -1,0 +1,51 @@
+@startuml request-routing
+!include ../_includes/theme.puml
+
+' Routing one request: classification, a clarifying question when candidates
+' are close, a remembered routing hint, waking the root orchestrator through
+' the session host and waggle, and the result coming back.
+' Sources: main loop spec DRAFT v0 §8, §10; waggle §10.
+
+title Routing a request
+caption Sources: main loop DRAFT v0 §8, §10; waggle §10
+
+skinparam ParticipantBackgroundColor $SERVICE
+skinparam ParticipantBorderColor $SERVICE_LINE
+
+actor "Person" as person $PERSON
+participant "Channel\n(terminal or messenger)" as channel
+participant "Main loop session\n(keeper skill)" as loop $AGENT
+participant "keeper route\n(classifier)" as route
+database "keeper.toml\n(registry, hints)" as registry $COMMITTED
+participant "Session host" as host
+queue "waggle carrier" as carrier $CARRIER
+participant "Café root orchestrator" as cafe $AGENT
+
+person -> channel : "order oat milk"
+channel -> loop : message (low-authority coord)
+loop -> route : text, channel, sender, conversation
+route -> registry : descriptions, states, hints
+registry --> route
+route --> loop : candidates: café 0.82, home 0.61\ndecision: ask
+
+alt close candidates
+  loop -> channel : "For home or for the café?"
+  person -> channel : "for the café"
+  channel -> loop : answer
+  loop -> registry : write routing hint\n(takes effect at once)
+end
+
+loop -> host : wake café\n(start detached if not running)
+host --> loop : session running
+loop -> carrier : coord.request to the café's root orchestrator
+carrier -> host : message appended to the mailbox
+host -> cafe : doorbell (fixed template)
+cafe -> carrier : task-board mail read
+cafe -> cafe : works on its own board
+cafe -> carrier : coord result
+carrier -> host
+host -> loop : doorbell
+loop -> channel : "Ordered: 12 l oat milk, arrives Tuesday"
+channel -> person
+
+@enduml

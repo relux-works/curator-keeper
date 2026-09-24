@@ -1,0 +1,83 @@
+@startuml several-nodes
+!include ../_includes/theme.puml
+
+' Several nodes, architected for and not implemented now: a head main loop on
+' the owner's control node, a second node with its own main loop and processes,
+' one process worked from both nodes under leases, the NATS carrier on the
+' tailnet, and an external participant working under a lease.
+' Sources: main loop spec DRAFT v0 §4, §10.3; waggle §9.3, §12.
+
+title Several nodes (architected for, not implemented)
+caption Sources: main loop DRAFT v0 §4, §10.3; waggle §9.3, §12
+
+hide stereotype
+
+skinparam rectangle<<agent>> {
+  BackgroundColor $AGENT
+  BorderColor $AGENT_LINE
+}
+skinparam database<<committed>> {
+  BackgroundColor $COMMITTED
+  BorderColor $COMMITTED_LINE
+}
+skinparam actor<<person>> {
+  BackgroundColor $PERSON
+  BorderColor $PERSON_LINE
+}
+skinparam queue<<carrier>> {
+  BackgroundColor $CARRIER
+  BorderColor $CARRIER_LINE
+}
+
+actor "Owner (operator)" as owner <<person>>
+actor "Second operator" as op2 <<person>>
+
+node "Control node (owner's machine)" as nodeA {
+  rectangle "Head main loop" as headLoop <<agent>>
+  frame "Process: hobby app (owned here)" as procApp {
+    rectangle "Root orchestrator" as rootApp <<agent>>
+    database "Board\n(one for the process)" as boardApp <<committed>>
+  }
+  frame "Process: family calendar" as procCal {
+    rectangle "Root orchestrator" as rootCal <<agent>>
+  }
+}
+
+node "Second node (home server)" as nodeB {
+  rectangle "Main loop" as loopB <<agent>>
+  frame "Process: smart home (owned here)" as procHome {
+    rectangle "Root orchestrator" as rootHome <<agent>>
+  }
+  frame "Process: hobby app (joined)" as procAppB {
+    rectangle "Sub-orchestrator\nunder a lease" as subApp <<agent>>
+  }
+}
+
+queue "waggle NATS carrier\non the tailnet\n(mailboxes, leases)" as nats <<carrier>>
+
+rectangle "External participant\n(another owner's agent)" as external <<agent>>
+
+owner --> headLoop : requests
+op2 --> loopB : requests
+
+headLoop <--> nats : coord: requests\nand reports
+loopB <--> nats : coord: requests\nand reports
+headLoop --> rootApp : start, wake
+headLoop --> rootCal : start, wake
+loopB --> rootHome : start, wake
+loopB --> subApp : start under\nthe root's lease
+
+rootApp --> boardApp : writes its subtree
+subApp ..> nats : leased subtree,\ncoordination
+nats ..> rootApp
+external ..> nats : works under a lease\nand signatures
+
+note bottom of nats
+  • Every main loop starts only its own root orchestrators.
+  • A process has one board and one root orchestrator,
+    on the node that owns it; other nodes join under leases.
+  • The head main loop routes; the others report.
+    Coordination, not command.
+end note
+
+@enduml
