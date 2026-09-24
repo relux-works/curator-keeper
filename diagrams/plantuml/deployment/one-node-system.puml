@@ -1,15 +1,16 @@
 @startuml one-node-system
 !include ../_includes/theme.puml
 
-' One node: the main loop in its root directory with the process registry and
-' its own board, the session host, several processes (each its own repository
-' with exactly one root orchestrator), the operator's private files, and the
-' person reaching the main loop through channels and the companion app.
-' Sources: main loop spec DRAFT v0 §3, §5, §7, §10, §11;
-' curator-playbook process configuration DRAFT v3.3 §2.1, §2.3, §6.5.
+' One node: the main loop in its root directory with the process registry,
+' its own board and its system roles, the session host, several processes
+' (each its own repository with exactly one root orchestrator), the
+' operator's private files, the person's own backup remote, and the person
+' reaching the main loop through channels and the companion app.
+' Sources: main loop spec DRAFT v0.1 §3, §5, §6.2, §10, §11, §12;
+' curator-playbook process configuration DRAFT v3.5 §2.1, §2.3, §6.5.
 
 title One node: the main loop and its processes
-caption Sources: main loop DRAFT v0 §3, §5, §7, §10, §11; process configuration v3.3 §2.1, §2.3, §6.5
+caption Sources: main loop DRAFT v0.1 §3, §5, §6.2, §10, §11, §12; process configuration v3.5 §2.1, §2.3, §6.5
 
 hide stereotype
 
@@ -37,6 +38,10 @@ skinparam file<<private>> {
   BackgroundColor $PRIVATE
   BorderColor $PRIVATE_LINE
 }
+skinparam cloud<<private>> {
+  BackgroundColor $PRIVATE
+  BorderColor $PRIVATE_LINE
+}
 skinparam actor<<person>> {
   BackgroundColor $PERSON
   BorderColor $PERSON_LINE
@@ -51,23 +56,26 @@ skinparam queue<<carrier>> {
 }
 
 actor "Person" as person <<person>>
-rectangle "Companion app\n(phone)" as app <<person>>
+rectangle "Companion app\n(phone or computer)" as app <<person>>
+cloud "The person's own git remote\n(backup; never ours)" as remote <<private>>
 
 node "Node: one machine" as node {
 
-  folder "Root directory (a git repository)" as root {
+  folder "Root directory (the person's git repository)" as root {
     rectangle "Main loop session\nkeeper skill + <i>keeper</i> command" as mainloop <<agent>>
+    collections "System roles in the main loop's process:\ndesigner, librarian,\nsysadmin (backup, tokens, updates),\nwatchdog (context and limits,\nfrom session-host telemetry)" as sysroles <<agent>>
     file registry <<committed>> [
       <b>keeper.toml</b>: process registry
       ----
       <b>Playbook.json</b>: the main loop's own process
       ----
-      <b>Skillfile.json</b>: keeper, designer, librarian, board
+      <b>Skillfile.json</b>: one entry, the keeper package
+      (board tool, session-host tooling, roles, profiles)
     ]
     database "Main loop board:\nrequests and answers" as rootboard <<committed>>
   }
 
-  component "Session host" as sessionhost <<service>>
+  component "Session host\n(session registry,\ncapability tokens)" as sessionhost <<service>>
   queue "waggle local carrier\n(mailboxes)" as carrier <<carrier>>
 
   frame "Process: family calendar" as procCal {
@@ -82,23 +90,22 @@ node "Node: one machine" as node {
     database "Board" as boardCafe <<committed>>
   }
 
-  frame "Process: smart home" as procHome {
-    rectangle "Root orchestrator\n(exactly one)" as rootHome <<agent>>
-    database "Board" as boardHome <<committed>>
-  }
-
   file operatorfiles <<private>> [
     <b><U+007E>/.curator/</b>: models, runtimes, engines, network
     (the operator's, never committed)
+    ----
+    keychain: tokens (never in git)
   ]
 }
 
 person --> mainloop : terminal (keeper attach)\nor messenger channel
 app <..> mainloop : approvals and\nconfirmations (signed)
+app <..> sysroles : secrets moved only over\nthe paired channel (sysadmin)
 
 mainloop --> registry : reads, proposes changes\n(confirmed by a person)
 mainloop --> rootboard : records requests
-mainloop --> sessionhost : start, wake, park, stop\nroot orchestrators
+mainloop --> sysroles : runs on schedule\nand on demand
+mainloop --> sessionhost : up, wake, park, stop\nroot orchestrators
 mainloop --> carrier : coord requests
 carrier --> rootCal : doorbell, pull
 carrier --> rootCafe : doorbell, pull
@@ -106,13 +113,13 @@ rootCafe ..> carrier : results, questions\nfor the person
 
 sessionhost --> rootCal : hosts
 sessionhost --> rootCafe : hosts
-sessionhost --> rootHome : hosts
+
+sysroles ..> remote : backup of the root and\nprocess repositories (sysadmin)
 
 rootCal --> runsCal : spawns inside\nits process
 rootCafe --> runsCafe : spawns inside\nits process
 rootCal --> boardCal : writes
 rootCafe --> boardCafe : writes
-rootHome --> boardHome : writes
 
 procCafe .right.> procCal : hand-off only
 
@@ -124,6 +131,8 @@ legend right
     reached only by hand-off.
   • Registry changes take effect
     after a person confirms them.
+  • System roles hold no secrets;
+    trusted executors do the privileged steps.
 endlegend
 
 @enduml

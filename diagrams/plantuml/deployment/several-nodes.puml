@@ -5,10 +5,10 @@
 ' the owner's control node, a second node with its own main loop and processes,
 ' one process worked from both nodes under leases, the NATS carrier on the
 ' tailnet, and an external participant working under a lease.
-' Sources: main loop spec DRAFT v0 §4, §10.3; waggle §9.3, §12.
+' Sources: main loop spec DRAFT v0.1 §4, §10.4; waggle §9.3, §12.
 
 title Several nodes (architected for, not implemented)
-caption Sources: main loop DRAFT v0 §4, §10.3; waggle §9.3, §12
+caption Sources: main loop DRAFT v0.1 §4, §10.4; waggle §9.3, §12
 
 hide stereotype
 

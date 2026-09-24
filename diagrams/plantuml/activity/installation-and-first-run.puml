@@ -1,12 +1,17 @@
 @startuml installation-and-first-run
 !include ../_includes/theme.puml
 
-' Installation from zero and the first run of the main loop.
-' Sources: main loop spec DRAFT v0 §6, §11.3; curator-playbook process
-' configuration DRAFT v3.3 §2.3, §8.1; curator-inference-manager.
+' Installation from zero and the first run of the main loop: the root is
+' instantiated from a pinned, audited template package (no upstream to us),
+' one root package installs everything, commands are built from source,
+' the first run takes branch A (local model, after stating the download)
+' or branch B (semi-automatic harness setup), then channels, pairing with or
+' without a screen, the first process and the login agent.
+' Sources: main loop spec DRAFT v0.1 §6, §10.6, §11.3; curator-playbook
+' process configuration DRAFT v3.5 §2.3, §8.1, §8.6; curator-inference-manager.
 
 title Installation and first run
-caption Sources: main loop DRAFT v0 §6, §11.3; process configuration v3.3 §2.3, §8.1
+caption Sources: main loop DRAFT v0.1 §6, §10.6, §11.3; process configuration v3.5 §2.3, §8.1, §8.6
 
 skinparam ActivityBackgroundColor $SERVICE
 skinparam ActivityBorderColor $SERVICE_LINE
@@ -16,32 +21,49 @@ skinparam ActivityDiamondBorderColor $COMMITTED_LINE
 start
 :Install Curator
 (script from the website or Homebrew);
-:Initialize the root directory from the template package:
-Skillfile.json, Playbook.json, keeper.toml, task-board.config.json;
-:Install through Curator:
-keeper skill with the <i>keeper</i> command,
-board, designer and librarian roles (on demand),
-base environment profiles;
-:Initialize the main loop's board and commit the root;
+:<i>curator apiary init</i>: instantiate the root from the
+pinned, audited template package into <U+007E>/apiary
+(the person's own repository, no upstream to us);
+:Resolve the one root entry, the keeper package:
+board tool, session-host tooling,
+designer, librarian, sysadmin, watchdog roles, profiles;
+:Build the commands from source
+(go-v1 driver, pinned Go toolchain);
+:Initialize the main loop's board; first commit;
 if (Hardware meets the published minimum?) then (yes)
-  :Install an engine package and a small local model
-  (curator-inference-manager);
-  :Start the main loop on the local model;
-  :Questionnaire: which subscriptions and harnesses?
-  Add runtime bindings; the person logs in;
+  :State the download: engine and model size,
+  disk space, expected time; ask the person;
+  if (Person accepts?) then (yes)
+    :Install the engine package and a small local model
+    (curator-inference-manager);
+    :Start the main loop on the local model;
+    :Questionnaire: which subscriptions and harnesses?
+    Add runtime bindings;
+  else (no, set up a harness instead)
+    :Semi-automatic harness setup
+    (as in the other branch);
+  endif
 else (no)
-  :Authenticate a harness fit for
-  the root-orchestrator role;
-  :Start the main loop on it;
+  :Detect installed harnesses and logins,
+  print the shortest install and login steps,
+  check the result;
+  :The first working harness becomes the default,
+  start the main loop on it;
 endif
 :Offer channels: messengers through waggle providers
 (terminal until then: <i>keeper attach</i>);
-:Pair the companion app:
-QR code, keys exchanged and pinned;
+if (Node has a screen or a terminal the person sees?) then (yes)
+  :Pair the companion app by QR code;
+else (headless)
+  :Pair by a short code over SSH and compare the
+  authentication string, or relay from a paired workstation;
+endif
+:Keys exchanged and pinned;
 :The person asks; the main loop proposes processes
 from published packages; the designer creates one;
-:The person confirms on the phone;
+:The person confirms (companion app or OS authentication);
 :The main loop starts the process's root orchestrator;
+:Register the login agent that runs <i>keeper up</i> at every login;
 stop
 
 @enduml

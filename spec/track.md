@@ -1,20 +1,21 @@
 # Track: main loop
 
-Status: **DRAFT v0**, 2026-09-24. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP.
+Status: **DRAFT v0.1**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
 
 ## Why
 
-The process configuration (curator-playbook) lets one project describe how it works. One person runs several such processes on one machine — a family calendar, the smart home, a hobby project, a café — and needs one place that knows them all. That place takes a request in plain words, sends it to the right process, keeps that process's orchestrator running, and brings back results and questions. Without it, the person has to open the right orchestrator by hand and remember how everything is organized.
+The process configuration (curator-playbook) lets one project describe how it works. One person runs several such processes on one machine — a family calendar, the smart home, a hobby project, a café — and needs one place that knows them all. That place takes a request in plain words, sends it to the right process, keeps that process's orchestrator running, brings back results and questions, and brings the whole machine back after a reboot. Without it, the person has to open the right orchestrator by hand and remember how everything is organized.
 
 ## Milestones
 
 | # | Delivers | Done when |
 | --- | --- | --- |
 | KP0 | draft specification, diagrams, a refuter run | merged as a draft; every refuter finding resolved or listed as open |
-| KP1 | one node on existing harnesses: the keeper skill and the `keeper` command; the process registry; `keeper start` and `keeper attach` through the extracted session host; starting and waking root orchestrators; routing with a generative fallback and routing hints; creating a process from a template; the main loop's own process on its own board | on one machine, a request typed in the terminal reaches the right one of three processes, and a request for a missing process creates it from a template after the person confirms |
-| KP2 | channels through waggle providers; pairing with the companion app and approvals through it (on the app's own track) | a request written in a messenger is answered there, and an approval is signed on the phone |
+| KP1 | one node on existing harnesses: the root instantiated from the template package with no upstream; the keeper package as the one root entry; the `keeper` command (`up`, `down`, `ls`, `attach` with its picker, `park`, `stop`, `estop`, `status`, `hive`, `route`, `create`, `wake`); the login agent running `keeper up`; supervision through the extracted session host with capability tokens; routing with a generative fallback and routing hints; creating a process from a template; the main loop's own process on its own board | on one machine, a request typed in the terminal reaches the right one of three processes; a request for a missing process creates it from a template after the person confirms; after a reboot, `keeper up` brings back the main loop and every queen with their goals |
+| KP2 | channels through waggle providers; pairing with the companion app, with and without a screen, and approvals through it (on the app's own track) | a request written in a messenger is answered there, and an approval is signed on the phone; a headless node pairs without a screen |
 | KP3 | the designer's generation and improvement proposals; the librarian on a schedule; skill discovery and installation from the Curator registry | a request no template fits yields a validated new process; two near-duplicate playbooks yield a merge proposal that the person approves |
-| KP4 | several nodes: joined processes, a head main loop, several operators | one process is worked from two machines under leases, and a request typed on one machine reaches a process on another |
+| KP4 | the sysadmin (backup to the person's own remotes, restore, the token inventory, the trusted-skills list, skill updates) and the watchdog (context, compaction, provider limits) | a node restored from its backup on a new machine runs the same processes with the same skill versions after the person confirms the secrets transfer on the app; a session about to compact writes its hand-off first |
+| KP5 | several nodes: joined processes, a head main loop, several operators | one process is worked from two machines under leases, and a request typed on one machine reaches a process on another |
 
 ## Dependencies
 
@@ -22,14 +23,17 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Extract today's session daemon as a module first, unchanged (the operator's priority, 2026-09-24).
   - Then add what the main loop needs:
     - start a hosted session detached in any directory;
-    - attach to any session, with viewers;
-    - park and stop;
-    - deliver doorbells into sessions nobody is attached to.
+    - a session registry for `keeper ls` and the attach picker; attach with control or as a viewer;
+    - park, stop and the emergency stop;
+    - per-session capability tokens that enforce who may act on which session;
+    - deliver doorbells into sessions nobody is attached to;
+    - telemetry for the watchdog: context usage, compaction signals, token events.
 - **Curator.**
   - `curator run` as the one entry point (Decision 0021).
-  - Environment profiles (Decision 0010), including the main loop's profile.
+  - Environment profiles (Decision 0010), including the main loop's profile; profiles carried by packages (a proposal, specification §13.3).
   - On-demand skills and the skills launch channel (curator-spec issue #91).
-  - Skill commands built from source.
+  - Template packages instantiated without an upstream.
+  - Commands built from source with a pinned Go toolchain (curator issue #87 on the toolchain policy); signed binaries later.
   - The registry of audited skills.
 - **waggle.**
   - The local carrier, the doorbell and `task-board mail` (CM1).
@@ -38,11 +42,13 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Amendment A1 (board acts, hand-off results, delegation).
   - A companion-app signer provider.
 - **curator-playbook.**
-  - Processes, confirmation of every process change (DRAFT v3.5 §2.4), hand-off, delegation, standing answers.
+  - Processes, confirmation of every process change (DRAFT v3.5 §2.4), hand-off, delegation, skill policy, standing answers.
 - **curator-inference-manager.**
-  - The first-run local model.
+  - The first-run local model, with download sizes the installer can state.
+- **The operating system.**
+  - A user-level login agent (launchd, systemd) and a keychain for tokens.
 - **The companion app.**
-  - Its own track, not started.
+  - Its own track, not started: one app over one secure-storage abstraction, on every platform, starting with one.
 
 ## Risks
 
@@ -59,6 +65,10 @@ The process configuration (curator-playbook) lets one project describe how it wo
 - **Authority creeps into the main loop.**
   - The invariants keep it out: no board writes and no spawns inside processes.
   - Registry changes need confirmation.
+  - The authority table for sessions only narrows (specification §10.2).
 - **The phone as the only approval device.**
-  - Operating-system authentication on the machine stays a second path.
+  - Operating-system authentication on the machine stays a second path, and the app also runs on a computer.
   - Losing or replacing the phone is an open question.
+- **A backup leaks secrets.** Secrets never enter git or an agent's environment; they move only between the node's keychain and the paired app, after the person confirms.
+- **An update path becomes an injection path.** No node keeps an upstream to our repositories; our code enters only as audited, pinned packages from the Curator registry, and every change to a process still waits for confirmation.
+- **Everything runs as one operating-system user before CM2.** Capability tokens and the operator's terminal are a guardrail, not a boundary; the emergency stop and confirmations need a person present. Protecting the root and the operator's files at the operating-system level is an open question.

@@ -1,17 +1,17 @@
 # curator-keeper
 
-The main loop of an agent system (working name: Keeper). On one machine it keeps the registry of the processes that machine runs — a family calendar, a café, a hobby project. It routes each request a person makes to the right process, starts and supervises each process's root orchestrator, and talks with the person.
+The main loop of an agent system: the keeper of an apiary. On one machine it keeps the registry of the processes that machine runs — a family calendar, a café, a hobby project. It routes each request a person makes to the right process, starts and supervises each process's root orchestrator, and talks with the person.
 
 ## Status
 
-**Draft design, v0.** Nothing is implemented. The specification is a draft (milestone KP0); user-facing names are pending the operator's decision (spec §2.1).
+**Draft design, v0.1.** Nothing is implemented. The specification is a draft (milestone KP0). The beekeeping names were approved on 2026-09-25 (spec, Names): apiary, yard, keeper, hive, queen, comb, bee, wild bees, nuc.
 
 ## Layout
 
 | Path | Content |
 | --- | --- |
 | [`spec/keeper.md`](spec/keeper.md) | the draft specification |
-| [`spec/track.md`](spec/track.md) | milestones KP0–KP4, dependencies, risks |
+| [`spec/track.md`](spec/track.md) | milestones KP0–KP5, dependencies, risks |
 | [`diagrams/`](diagrams/) | diagrams as code (PlantUML) and their renders |
 
 ## How it fits

@@ -23,6 +23,7 @@ diagrams/
 | Several nodes | PlantUML deployment | [several-nodes.puml](plantuml/deployment/several-nodes.puml) | [SVG](artefacts/plantuml/several-nodes.svg), [PNG](artefacts/plantuml/several-nodes.png) |
 | Installation and first run | PlantUML activity | [installation-and-first-run.puml](plantuml/activity/installation-and-first-run.puml) | [SVG](artefacts/plantuml/installation-and-first-run.svg), [PNG](artefacts/plantuml/installation-and-first-run.png) |
 | Routing a request | PlantUML sequence | [request-routing.puml](plantuml/sequence/request-routing.puml) | [SVG](artefacts/plantuml/request-routing.svg), [PNG](artefacts/plantuml/request-routing.png) |
+| Reboot: `keeper up` restores the node | PlantUML sequence | [reboot-restore.puml](plantuml/sequence/reboot-restore.puml) | [SVG](artefacts/plantuml/reboot-restore.svg), [PNG](artefacts/plantuml/reboot-restore.png) |
 
 ## Tools
 
@@ -47,7 +48,7 @@ The output directory is absolute because PlantUML resolves a relative `-o` again
 ## Conventions
 
 - One purpose per diagram, with a title and a caption naming the specification sections it follows.
-- Technical terms only, as in the specification.
+- Technical terms in labels, as in the specification's prose; beekeeping names appear only where the specification uses them too (command names, directories and profiles).
 - Colour says what a thing is:
   - blue: node services (session host, commands);
   - purple: agents (the main loop session, orchestrators, runs);

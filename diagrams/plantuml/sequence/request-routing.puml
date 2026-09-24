@@ -4,10 +4,10 @@
 ' Routing one request: classification, a clarifying question when candidates
 ' are close, a remembered routing hint, waking the root orchestrator through
 ' the session host and waggle, and the result coming back.
-' Sources: main loop spec DRAFT v0 §8, §10; waggle §10.
+' Sources: main loop spec DRAFT v0.1 §8, §10.4; waggle §10.
 
 title Routing a request
-caption Sources: main loop DRAFT v0 §8, §10; waggle §10
+caption Sources: main loop DRAFT v0.1 §8, §10.4; waggle §10
 
 skinparam ParticipantBackgroundColor $SERVICE
 skinparam ParticipantBorderColor $SERVICE_LINE

@@ -1,0 +1,58 @@
+@startuml reboot-restore
+!include ../_includes/theme.puml
+
+' After a reboot (or at any login, or by hand): the login agent runs
+' keeper up, the single entry point that brings the node back. The session
+' host starts, the main loop's session resumes, each owned process's root
+' orchestrator resumes from its goal and park note, queued doorbells are
+' delivered, and the main loop reports to the person. Sub-orchestrators and
+' runs are left to each root orchestrator.
+' Sources: main loop spec DRAFT v0.1 §1.1, §7.3, §10.5, §10.6.
+
+title Reboot: keeper up restores the node
+caption Sources: main loop DRAFT v0.1 §1.1, §7.3, §10.5, §10.6
+
+skinparam ParticipantBackgroundColor $SERVICE
+skinparam ParticipantBorderColor $SERVICE_LINE
+
+participant "Login agent\n(launchd or systemd,\nuser level)" as agent
+participant "keeper up" as up
+participant "Session host" as host
+participant "Main loop session" as loop $AGENT
+participant "Calendar root orchestrator" as cal $AGENT
+participant "Café root orchestrator" as cafe $AGENT
+database "Boards\n(goals, park notes)" as boards $COMMITTED
+actor "Person" as person $PERSON
+
+== Login ==
+agent -> up : run at login (idempotent)
+up -> host : start
+host -> host : read the session registry
+
+== The main loop ==
+up -> host : resume the main loop's session
+alt the harness session still exists
+  host -> loop : native resume
+else it is gone
+  host -> boards : read the main loop's goal and park note
+  host -> loop : new session, goal injected\nwith the park note
+end
+
+== Each owned process, in registry order ==
+up -> host : resume each owned process's root orchestrator\n(not those the person stopped)
+host -> boards : goal and park note of the calendar
+host -> cal : resume natively, or new session\nwith goal and park note
+host -> boards : goal and park note of the café
+host -> cafe : resume natively, or new session\nwith goal and park note
+note over cal, cafe
+  Each reads its park note and board obligations first,
+  then decides which sub-orchestrators and runs to restart.
+  keeper up restarts none of them.
+end note
+
+== Afterwards ==
+host -> cal : deliver queued doorbells
+host -> cafe : deliver queued doorbells
+loop -> person : report: what came back, what did not and why\n(terminal or channel)
+
+@enduml
