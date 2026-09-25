@@ -1,6 +1,6 @@
 # Track: main loop
 
-Status: **DRAFT v0.2**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
+Status: **DRAFT v0.3**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
 
 ## Why
 
@@ -13,7 +13,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
 | KP0 | draft specification, diagrams, a refuter run | merged as a draft; every refuter finding resolved or listed as open |
 | KP1 | one node on existing harnesses: the root instantiated from the template package with no upstream; the keeper package's `apiary` profile as the one install; the `keeper` command (`keeper` itself, `up`, `down`, `ls`, `chat` with its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive`, `route`, `create`, `wake`; the first ones wrap today's `task-board session` commands); the login agent running `keeper up`; supervision through the extracted session host with capability tokens; routing with a generative fallback and routing hints; creating a process from a template; the main loop's own process on its own board | on one machine, a request typed in the terminal reaches the right one of three processes; a request for a missing process creates it from a template after the person confirms; after a reboot, `keeper up` brings back the main loop and every queen with their goals |
 | KP2 | channels through waggle providers; the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen, and approvals, grants and batched confirmations through it (on the app's own track) | a request written in a messenger is answered there, and an approval is signed on the phone; a headless node pairs without a screen |
-| KP3 | the designer's generation and improvement proposals; the librarian on a schedule; skill discovery and installation from the Curator registry; the memory skill, files backend first | a request no template fits yields a validated new process; two near-duplicate playbooks yield a merge proposal that the person approves |
+| KP3 | the designer's generation and improvement proposals; the librarian on a schedule; skill discovery and installation from the Curator registry; the memory skill with its resolution ladder (fact cards, session, day, week and month summaries with identifiers, `memory expand`), files backend first; the designer's dream rehearsals once curator-playbook dream mode ships | a request no template fits yields a validated new process; two near-duplicate playbooks yield a merge proposal that the person approves |
 | KP4 | the sysadmin (backup to the person's own remotes, restore, the token inventory, the trusted-skills list, skill updates) and the watchdog (context, compaction, provider limits) | a node restored from its backup on a new machine runs the same processes with the same skill versions after the person confirms the secrets transfer on the app; a session about to compact writes its hand-off first |
 | KP5 | several nodes: joined processes, a head main loop, several operators | one process is worked from two machines under leases, and a request typed on one machine reaches a process on another |
 
@@ -43,7 +43,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Amendment A1 (board acts, hand-off results, delegation).
   - A companion-app signer provider.
 - **curator-playbook.**
-  - Processes, hand-off, delegation semantics, skill policy (DRAFT v4.0, the core).
+  - Processes, hand-off, delegation semantics, skill policy (DRAFT v4.2, the core).
 - **curator-trust.**
   - Who counts as a person, confirmations and their batching, capability grants, yolo, standing answers under review, the companion app and pairing, secrets, separation at the operating-system level (relux-works/curator-trust `spec/trust.md`).
 - **curator-inference-manager.**

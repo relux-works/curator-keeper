@@ -1,6 +1,6 @@
 # Main loop: specification
 
-Status: **DRAFT v0.2**, 2026-09-25. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Change logs: §16 (v0 → v0.1) and §17 (v0.1 → v0.2).
+Status: **DRAFT v0.3**, 2026-09-25. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Change logs: §16 (v0 → v0.1) and §17 (v0.1 → v0.2).
 
 One person runs several processes on one machine: a family calendar, the smart home, a hobby project, a small café. Each process has its own playbook, board and root orchestrator (curator-playbook `spec/process-configuration.md`). Something has to sit above them. It must:
 
@@ -35,7 +35,7 @@ Markers:
 - **pending operator decision**: named where it applies.
 
 Related documents:
-- curator-playbook `spec/process-configuration.md`, DRAFT v4.0 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
+- curator-playbook `spec/process-configuration.md`, DRAFT v4.2 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
 - relux-works/curator-trust `spec/trust.md`: who counts as a person, confirmations and their batching, capability grants, yolo mode, the companion app and pairing, secrets, and separation at the operating-system level;
 - waggle `spec/waggle.md` with Amendment A1: messages, doorbell, carriers, leases, board acts;
 - the session-host specification (`agent-session-host`);
@@ -286,6 +286,8 @@ curator profile install relux-works/curator-playbook-keeper
 | the memory skill | `runtime`, narrowed to the `memory` command | notes with provenance (§13.4) |
 | waggle tooling | `runtime`, once waggle CM1 ships | mail, doorbell, providers |
 
+- **The `keeper` command on the person's `PATH`.** The profile's skills reach only the apiary's own sessions, but the person types `keeper` in any terminal. The installer therefore also declares the keeper skill globally with activation `runtime`: commands only, no context. That publishes the `keeper` shim without materializing the main loop's role anywhere (curator-spec issue #95, curator issue #95). Until it ships, `keeper` reaches the person's `PATH` only while `apiary` is the machine-current profile, through Curator's forwarding of that profile's commands (curator-spec Decision 0016). *proposed*
+
 - **One version to update.** Every profile of the node pins the same keeper package version, so updating the package updates the set.
 - **The declarations are committed.** The node's profile and overlay declarations, with their pins, are exported into the root's `curator/profiles.json` (curator-spec issue #93). The root repository therefore describes exactly what the node runs, and restore re-creates it (§12.1).
 - **One tool, many boards.** The `task-board` command is installed once per node: a Curator command shim has exactly one owner and one version on a node. Every process's board is data in that process's own repository (`.task-board/`). The keeper package and every process's orchestrator skill declare the board tool as a dependency so that Curator can check they agree; a process whose skills demand another version of the tool is refused with both requirement chains, never installed beside it.
@@ -479,14 +481,16 @@ When no process takes a request, the main loop matches it against published proc
 - **It writes a `Playbook.json` when no template fits**, extending the closest template where there is one. The validator checks it (`playbook validate`), and the refuter may challenge it.
 - **It starts from the simplest process that works:** the fewest states, roles and fields that carry the request. It adds complexity only on evidence: repeated escalations, recurring manual steps, reviews that keep failing. *decided (2026-09-24)*
 - **It keeps processes alive.** The main loop measures each process: throughput, rework, time spent waiting on people, escalations. The designer proposes improvements the way a bug on a board is fixed: a change to the process's `Playbook.json`, validated, then confirmed (§9.6). *decided (2026-09-24)*
+- **It rehearses before it asks.** Before asking for a new process to be enabled, or for a change to take effect, the designer runs it in a dream (curator-playbook §6.13): every tool runs with `--dream` against a copy of the board, nothing reaches the real world, and the agents know they are dreaming. The dream's report — which steps were reached, where it stalled — goes with the confirmation request, as evidence of a rehearsal, never of real work. *proposed (2026-09-25)*
 
 ### 9.3 Creating a process
 
 1. The designer drafts the project directory: `Playbook.json`, `Skillfile.json`, `task-board.config.json`, a board, and a description for the registry.
 2. The draft passes the validator, and the skills the process needs are installed (§9.5).
-3. The draft is committed in the new repository, and the registry entry is written.
-4. The person confirms (§11.2). One confirmation covers the process's configuration and the registry entry together.
-5. The main loop starts the root orchestrator (§10.1) and hands it the request that led here.
+3. The designer rehearses the draft in a dream (§9.2) and attaches the report. *proposed*
+4. The draft is committed in the new repository, and the registry entry is written.
+5. The person confirms (§11.2), with the dream report in front of them. One confirmation covers the process's configuration and the registry entry together.
+6. The main loop starts the root orchestrator (§10.1) and hands it the request that led here.
 
 ### 9.4 The librarian
 
@@ -505,7 +509,7 @@ When no process takes a request, the main loop matches it against published proc
 ### 9.6 Changing a process *(decided 2026-09-24)*
 
 - A change to a process's rules is a commit to the default branch of the process's repository (curator-playbook §2.4). No pull request and no hosting service is required; a project that uses one may keep it.
-- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.0; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
+- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.2 §2.4; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
 - A change that a granted capability covers needs no touch. A change to the process's structure waits for one touch, and one touch covers every pending change. A hive may run in yolo mode (§11.5).
 - A process without git applies a new version only through the same confirmation.
 
@@ -687,7 +691,7 @@ A system role in the main loop's own process, with a small deterministic core.
 ### 13.1 Kinds of memory
 
 - **Process memory is the board.** Decisions, outcomes, park notes and the goal live on the process's board: the journal is the state (principle 1).
-- **Personal memory is notes.** Facts the main loop or a queen learns about the person and the work — the people in the family, preferences, a supplier's habits — are notes kept by the memory skill (§13.4).
+- **Personal memory is the memory skill's ladder.** What the main loop or a queen learns about the person and the work — the people in the family, preferences, a supplier's habits — lives in fact cards, and what happened lives in summaries at several resolutions over the journal. Both are kept by the memory skill (§13.4).
 - **The persona is an operator overlay.** How to address the person, the tone and the language: a profile module that belongs to the operator, the persona or "soul" of the apiary (§13.2).
 - **Procedural memory is skills.** A procedure worth keeping becomes a skill. The designer may propose one, and it passes audit like any other.
 
@@ -696,7 +700,7 @@ A system role in the main loop's own process, with a small deterministic core.
 A session's context is composed in a fixed order:
 1. **The package profile**, which carries the role's behaviour. Modules the package marks as locked — safety rules, a role's boundaries — cannot be removed by later layers.
 2. **The process overlay**: project facts and conventions, and role overlays that add to a role's instructions for this project, like task-board's `.roles/<role>/` overlays today.
-3. **The operator overlay**: the persona, `~/apiary/persona/`, shared by every session of the apiary or narrowed to one hive; and the notes digest of §13.4.
+3. **The operator overlay**: the persona, `~/apiary/persona/`, shared by every session of the apiary or narrowed to one hive; and the memory snapshot of §13.4: the fact cards and the resolution ladder.
 
 Later layers add; they never remove a locked module. Curator already composes this: machine overlays are ordinary context packages from a git source or a local directory, with weights, declared in the machine's configuration and never by package data (curator-spec `protocol/environments.md` §6). The main loop or the sysadmin declares them through Curator's command line.
 
@@ -706,35 +710,49 @@ Later layers add; they never remove a locked module. Curator already composes th
 - **So a package ships profiles as data.** A process package ships a context package for each role's sessions under `profiles/`; the keeper package ships `apiary` and the system roles' profiles (§6.2). A process's registry entry names the profile its queen launches with.
 - **What is still needed from Curator:** the short form and default directories (curator-spec issue #92), and export and import of the declarations for backup (#93). Nothing else.
 
-### 13.4 The memory skill
+### 13.4 The memory skill and its resolution ladder
 
 A plug-and-play skill, installed with the main loop's profile (§6.2) and with every queen's.
 
-- **Commands.** `memory add`, `memory search`, `memory forget`, `memory review`, with `--json` for agents. Only these commands write notes; the main loop and the queens use them, and the person may too.
+- **Commands.** `memory add`, `memory search`, `memory expand <id>`, `memory forget`, `memory review`, and `memory approve` when write approval is on; all take `--json` for agents. Only these commands write memory; the main loop and the queens use them, and the person may too.
 - **Backends.** Files in git by default; SQLite; an external memory service. The backend is configuration; the commands stay the same.
 - **Provenance.** Every note records who wrote it, when, and where the fact came from: the person's own words, a board record, an external message.
 - **A daily write budget.** Each session may spend a number of tokens a day on notes. The budget is soft, and it makes the agent choose what is worth keeping.
 - **Quarantine.** A note derived from external input — a message from outside the apiary, a web page, a supplier's email — waits in quarantine until the person accepts it at the next review. It is the path by which injected instructions could otherwise persist.
-- **Into the context.** The skill renders a digest of accepted notes into the profile's notes overlay (§13.2), under a heading that says they are remembered facts, not instructions. Retrieval on demand, `memory search`, gives the rest. The digest's weight is below every module of the role.
+- **A resolution ladder, not a digest** *(proposed, 2026-09-25)*. A single short digest loses what matters. Memory is kept at several resolutions, and every line of a summary carries an identifier that leads back to what it summarizes, so an agent reads memory at one resolution and drills down where it needs detail:
+
+  | Level | Content | A line points to |
+  | --- | --- | --- |
+  | 0 | the journal: board events, run transcripts, chat transcripts; immutable, with full-text search | — |
+  | 1 | session summaries, written when a session parks or ends; the park note is one | ranges of transcripts and board events |
+  | 2 | day summaries | the day's session summaries |
+  | 3 | week and month summaries | days, or weeks |
+  | fact cards | bounded cards of facts about the person, the work and the environment | the day or session each fact came from |
+
+  - **Identifiers.** Every summary line and every fact carries an identifier, for example `D2026-09-24#3` for the third line of that day's summary. `memory expand <id>` returns the level below it — the day's sessions, a session's transcript range — and `memory search` searches every level.
+  - **What a session starts with.** The profile's memory overlay carries the fact cards and a ladder: today by session, this week by day, this month by week. It is injected as a snapshot at session start and stays fixed for the session, which keeps the prompt cache warm; it is refreshed at the next start or park.
+  - **Capacity forces consolidation.** Fact cards and each summary level have a size bound. A write that would exceed it is refused with an error, never dropped silently, so the agent consolidates or forgets before it retries.
+  - **Writes.** The daily token budget below, optional write approval (the person approves pending writes at the next review), and quarantine for facts derived from external input.
+  - The overlay says the ladder is remembered facts and summaries, not instructions, and its weight is below every module of the role.
 - **No authority.** Notes never grant anything: authority lives only in a process's confirmed configuration and in the operator's confirmed files.
 - **Where the data lives.** The main loop's notes and the system roles' in `~/apiary/memory/`; a queen's in its process repository's `memory/`. Both are backed up with their repositories (§12.1), and a restore brings them back with the resolve and the backup's data.
 - **Tampering.** While every agent runs as the operator's operating-system user, any agent can edit the files directly. The provenance and the reviews make that visible; they do not prevent it. The real protection is separation at the operating-system level: agents under an account of their own, and the notes owned by the operator's account and written only through the skill's broker (curator-trust).
 - **Review.** `memory review` joins the monthly review of standing answers and grants (§11.4, §11.5): the person keeps, edits or drops notes.
 
-### 13.5 Role profiles instead of project folders *(proposed; the direction of 2026-09-25)*
+### 13.5 Role profiles instead of project folders *(decided 2026-09-25)*
 
 - Every run launches with its role's Curator profile, so a role's skills live in that profile's managed home and are never materialized into a project folder such as `.claude/skills`. An orchestrator's session, or a harness someone starts by hand in the project folder, does not see them.
 - This fits the exit from agents-infra: the launch-profiles design already chooses a context profile per role (`spawn.context_profile`), and task-board consumes Curator fragments for its child runs (curator-spec Decision 0019).
-- Whether on-demand skills (curator-spec issue #91) are still needed is an open question (§15.2).
+- On-demand skills are withdrawn: curator-spec issue #91 and curator issue #91 were closed on 2026-09-25, and curator-playbook §8.1 now delivers role skills through per-role profiles.
 
 ## 14. Dependencies
 
 | Needs | From | Status |
 | --- | --- | --- |
 | start a hosted session in a directory, detached, with a profile and a goal; attach in control or read-only mode, for `keeper chat` and `keeper watch`; park, stop and the emergency stop; doorbells into detached sessions; a session registry for the picker; per-session capability tokens; session events and telemetry for the watchdog | the session host (its own specification; `ax` later) | extracting today's daemon comes first (the operator's priority, 2026-09-24); closing access to the host is the first refactor after it (decided 2026-09-25); the rest is new |
-| `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; export and import of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; on-demand skills, possibly unnecessary (§13.5) | Curator (Decisions 0004, 0005, 0010, 0019, 0021; curator-spec issues #91, #92, #93, #94; curator issue #87) | profiles and overlays exist; the decisions are proposed; the issues are open |
+| `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; export and import of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; command-only installs, so `keeper` is on the person's `PATH` while the role stays in its profile | Curator (Decisions 0004, 0005, 0010, 0016, 0019, 0021; curator-spec issues #92, #93, #94, #95; curator issue #87; #91 closed) | profiles and overlays exist; the decisions are proposed; the issues are open |
 | messages, doorbell, local and NATS carriers, leases, messenger providers, a companion-app signer provider | waggle (CM1, CM2, providers; Amendment A1) | CM1 is next; A1 is written |
-| processes, hand-off, delegation semantics, skill policy | curator-playbook | DRAFT v4.0 (the core) |
+| processes, hand-off, delegation semantics, skill policy, dream mode | curator-playbook | DRAFT v4.2 (the core) |
 | who counts as a person, confirmations and their batching, capability grants, yolo, the companion app and pairing, secrets, separation at the operating-system level | relux-works/curator-trust `spec/trust.md` | DRAFT |
 | the memory skill | its own package, installed with the profiles | proposed (§13.4) |
 | local engines and models for the first run | curator-inference-manager | specified |
@@ -752,7 +770,7 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 | KP0 | this draft, its diagrams, a refuter run |
 | KP1 | one node on existing harnesses: the detached root and the keeper package's profiles; the `keeper` command — `keeper` itself, `up`, `down`, `ls`, `chat` and its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive`, `route`, `create`, `wake`, the first ones wrapping today's `task-board session` commands; the login agent; the registry; supervision through the extracted session host with capability tokens; routing with a generative fallback and hints; creating a process from a template; the main loop's own process |
 | KP2 | channels through waggle providers; the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen, and approvals, grants and batched confirmations through it (on the app's own track) |
-| KP3 | the designer's generation and improvement proposals; the librarian; skill discovery and installation; the memory skill, files backend first |
+| KP3 | the designer's generation and improvement proposals, with dream rehearsals once curator-playbook dream mode ships; the librarian; skill discovery and installation; the memory skill with its resolution ladder, files backend first |
 | KP4 | the sysadmin: backup, restore, the token inventory, the trusted-skills list, skill updates; the watchdog |
 | KP5 | several nodes: joined processes, a head main loop, several operators |
 
@@ -778,9 +796,11 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 18. **Watchdog telemetry:** which signals each harness exposes (context usage, compaction hooks, token events) and how the session host passes them on.
 19. **Profiles:** the format of the package index that names a repository's profiles and its default (curator-spec issue #92).
 20. **Personal memory:** whether accepted notes need each person's review, or only quarantined ones (§13.4).
-21. **On-demand skills (curator-spec issue #91).** With role profiles, role skills never reach a project folder (§13.5). Does #91 become unnecessary, or does it still serve skills a session needs only sometimes?
+21. *Resolved on 2026-09-25:* on-demand skills are withdrawn and curator-spec issue #91 is closed; role skills reach their runs through role profiles (§13.5). The item keeps its number.
 22. **The memory skill:** the size of the daily write budget, the quarantine rules, and the search backend beyond files.
 23. **The phone's permission prompts:** how grants are worded and grouped, how many confirmations seal a grant, and how yolo is shown (curator-trust).
+24. **The memory ladder:** the size bounds of each level and of the fact cards, when day, week and month summaries are written (at the first session of the next period, or on a schedule of the main loop's process), and the identifier format (§13.4).
+25. **Dream rehearsals:** which requests the designer rehearses by default, how long a rehearsal may run, and how its report is shown in the confirmation request (§9.2; curator-playbook §17.3 item 19).
 
 ## 16. Change log: v0 → v0.1
 
@@ -823,3 +843,16 @@ Applied from the operator's answers of 2026-09-25:
 | Memory as a plug-and-play skill with provenance, a daily write budget, quarantine and a notes digest; the persona as a machine overlay; profiles as the install unit; role profiles instead of project folders | §13 |
 | The trust material now lives in relux-works/curator-trust; curator-playbook is referenced as its DRAFT v4.0 core | Related documents, §14 |
 | New open questions 21–23 | §15.2 |
+
+## 18. Change log: v0.2 → v0.3
+
+Applied from the operator's discussion of 2026-09-25:
+
+| Change | Where |
+| --- | --- |
+| References move to curator-playbook DRAFT v4.2 (the core) | Related documents, §9.6, §14 |
+| The `keeper` command on the person's `PATH` through a command-only install, so the role stays in the `apiary` profile (curator-spec #95) | §6.2 |
+| Memory as a resolution ladder: the journal, session, day, and week or month summaries, and bounded fact cards; identifiers on every line; `memory expand` and `memory search`; a snapshot at session start; capacity errors that force consolidation; optional write approval | §13.1, §13.2, §13.4 |
+| Role profiles decided; on-demand skills withdrawn (curator-spec #91 and curator #91 closed) | §13.5, §14, §15.2 item 21 |
+| Dream rehearsals by the designer before it asks for enablement, with the report in the confirmation request | §9.2, §9.3 |
+| New open questions 24 and 25 | §15.2 |
