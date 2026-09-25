@@ -4,7 +4,7 @@ The main loop of an agent system: the keeper of an apiary. On one machine it kee
 
 ## Status
 
-**Draft design, v0.1.** Nothing is implemented. The specification is a draft (milestone KP0). The beekeeping names were approved on 2026-09-25 (spec, Names): apiary, yard, keeper, hive, queen, comb, bee, wild bees, nuc.
+**Draft design, v0.2.** Nothing is implemented. The specification is a draft (milestone KP0). The beekeeping names were approved on 2026-09-25 (spec, Names): apiary, yard, keeper, hive, queen, comb, bee, wild bees, nuc.
 
 ## Layout
 

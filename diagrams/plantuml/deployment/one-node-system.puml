@@ -10,7 +10,7 @@
 ' curator-playbook process configuration DRAFT v3.5 §2.1, §2.3, §6.5.
 
 title One node: the main loop and its processes
-caption Sources: main loop DRAFT v0.1 §3, §5, §6.2, §10, §11, §12; process configuration v3.5 §2.1, §2.3, §6.5
+caption Sources: main loop DRAFT v0.2 §3, §5, §6.2, §10, §11, §12; process configuration v3.5 §2.1, §2.3, §6.5
 
 hide stereotype
 
@@ -98,7 +98,7 @@ node "Node: one machine" as node {
   ]
 }
 
-person --> mainloop : terminal (keeper attach)\nor messenger channel
+person --> mainloop : terminal (keeper, keeper chat)\nor messenger channel
 app <..> mainloop : approvals and\nconfirmations (signed)
 app <..> sysroles : secrets moved only over\nthe paired channel (sysadmin)
 

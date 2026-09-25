@@ -1,17 +1,20 @@
 @startuml installation-and-first-run
 !include ../_includes/theme.puml
 
-' Installation from zero and the first run of the main loop: the root is
-' instantiated from a pinned, audited template package (no upstream to us),
-' one root package installs everything, commands are built from source,
-' the first run takes branch A (local model, after stating the download)
-' or branch B (semi-automatic harness setup), then channels, pairing with or
-' without a screen, the first process and the login agent.
-' Sources: main loop spec DRAFT v0.1 §6, §10.6, §11.3; curator-playbook
-' process configuration DRAFT v3.5 §2.3, §8.1, §8.6; curator-inference-manager.
+' Installation from zero and the first run of the main loop: prerequisites
+' (the system's git and Go, never overridden), a signed bootstrap, the keeper
+' package's apiary profile installed on signed audit records (no long local
+' audit), keeper init instantiating the root from a pinned template package
+' (no upstream to us), the first run taking branch A (local model, after
+' stating the download) or branch B (semi-automatic harness setup, asking for
+' the default when none is logged in), channels, the companion app (download
+' link, then pairing, each as a QR code in the terminal with a code as
+' fallback), the first process and the login agent.
+' Sources: main loop spec DRAFT v0.2 §6, §10.6, §11.3; curator-spec issues
+' #92, #93, #94; curator issue #87; curator-inference-manager.
 
 title Installation and first run
-caption Sources: main loop DRAFT v0.1 §6, §10.6, §11.3; process configuration v3.5 §2.3, §8.1, §8.6
+caption Sources: main loop DRAFT v0.2 §6, §10.6, §11.3; curator-spec #92, #93, #94; curator #87
 
 skinparam ActivityBackgroundColor $SERVICE
 skinparam ActivityBorderColor $SERVICE_LINE
@@ -19,17 +22,30 @@ skinparam ActivityDiamondBackgroundColor $COMMITTED
 skinparam ActivityDiamondBorderColor $COMMITTED_LINE
 
 start
-:Install Curator
-(script from the website or Homebrew);
-:<i>curator apiary init</i>: instantiate the root from the
-pinned, audited template package into <U+007E>/apiary
-(the person's own repository, no upstream to us);
-:Resolve the one root entry, the keeper package:
-board tool, session-host tooling,
-designer, librarian, sysadmin, watchdog roles, profiles;
-:Build the commands from source
-(go-v1 driver, pinned Go toolchain);
-:Initialize the main loop's board; first commit;
+:Verify the installer's signature;
+if (git on the system?) then (yes)
+  :Use the system's git;
+else (no)
+  :Install a lightweight git
+  (Command Line Tools on macOS or a
+  Curator-managed git; never full Xcode);
+endif
+if (System Go inside Curator's supported range?) then (yes)
+  :Use the system's Go;
+else (no)
+  :Curator installs its own toolchain
+  in its own directory (never on PATH);
+endif
+:Install Curator (script from the website or Homebrew)
+and verify the release signature;
+:<i>curator profile install relux-works/curator-playbook-keeper</i>
+(short form and default directory: profiles/apiary);
+:Accept packages on signed audit records
+(no long local audit; others audited or refused by policy);
+:Build the commands from source (go-v1 driver);
+:<i>keeper init</i>: instantiate <U+007E>/apiary from the pinned
+template package (the person's own repository, no upstream),
+install the system roles' profiles, initialize the board, first commit;
 if (Hardware meets the published minimum?) then (yes)
   :State the download: engine and model size,
   disk space, expected time; ask the person;
@@ -47,13 +63,20 @@ else (no)
   :Detect installed harnesses and logins,
   print the shortest install and login steps,
   check the result;
-  :The first working harness becomes the default,
-  start the main loop on it;
+  if (A harness is logged in?) then (yes)
+    :The first logged-in harness becomes the default;
+  else (no)
+    :Ask which installed harness becomes the default;
+  endif
+  :Start the main loop on it;
 endif
 :Offer channels: messengers through waggle providers
-(terminal until then: <i>keeper attach</i>);
+(terminal until then: <i>keeper</i>);
+:Ask iOS or Android; show the app's download link
+as a QR code in the terminal (or a short link);
 if (Node has a screen or a terminal the person sees?) then (yes)
-  :Pair the companion app by QR code;
+  :Show the pairing QR code in the terminal
+  (or a pairing code);
 else (headless)
   :Pair by a short code over SSH and compare the
   authentication string, or relay from a paired workstation;
