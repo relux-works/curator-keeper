@@ -286,7 +286,7 @@ curator profile install relux-works/curator-playbook-keeper
 | the memory skill | `runtime`, narrowed to the `memory` command | notes with provenance (§13.4) |
 | waggle tooling | `runtime`, once waggle CM1 ships | mail, doorbell, providers |
 
-- **The `keeper` command on the person's `PATH`.** The profile's skills reach only the apiary's own sessions, but the person types `keeper` in any terminal. The installer therefore also declares the keeper skill globally with activation `runtime`: commands only, no context. That publishes the `keeper` shim without materializing the main loop's role anywhere (curator-spec issue #95, curator issue #95). Until it ships, `keeper` reaches the person's `PATH` only while `apiary` is the machine-current profile, through Curator's forwarding of that profile's commands (curator-spec Decision 0016). *proposed*
+- **The `keeper` command on the person's `PATH`.** The profile's skills reach only the apiary's own sessions, but the person types `keeper` in any terminal. The installer therefore also declares the keeper skill globally with activation `runtime`: commands only, no context. That publishes the `keeper` shim without materializing the main loop's role anywhere (curator-spec issue #95, curator issue #95). Until it ships, `keeper` reaches the person's `PATH` only while `apiary` is the machine-current profile, through Curator's forwarding of that profile's commands (curator-spec Decision 0016). *decided 2026-09-25: the keeper skill lives only in the `apiary` profile, and the `keeper` command is global (curator-spec #95, curator #95; the on-demand route, curator-spec #91 and curator #91, is closed)*
 
 - **One version to update.** Every profile of the node pins the same keeper package version, so updating the package updates the set.
 - **The declarations are committed.** The node's profile and overlay declarations, with their pins, are exported into the root's `curator/profiles.json` (curator-spec issue #93). The root repository therefore describes exactly what the node runs, and restore re-creates it (§12.1).
@@ -745,6 +745,24 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 - This fits the exit from agents-infra: the launch-profiles design already chooses a context profile per role (`spawn.context_profile`), and task-board consumes Curator fragments for its child runs (curator-spec Decision 0019).
 - On-demand skills are withdrawn: curator-spec issue #91 and curator issue #91 were closed on 2026-09-25, and curator-playbook §8.1 now delivers role skills through per-role profiles.
 
+### 13.6 Dreams: the nightly cycle and dream memory *(proposed, 2026-09-25)*
+
+A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `--dream`, nothing reaches the real world, and the agents know they are dreaming. It is also how the node reflects on its own work.
+
+- **The nightly cycle.** At night, or whenever the node is idle, the main loop's own process runs a dream on a schedule of its `Playbook.json` (curator-playbook §6.6):
+  1. **Replay.** Each orchestrator reads its previous sessions, read-only, as the log distiller prepared them (below).
+  2. **Rehearsal.** Processes with changes pending, or with failures the day saw, run again with `--dream` tools.
+  3. **Consolidation.** The memory ladder gains the missing session and day summaries (§13.4), each line with its identifiers.
+  4. **Insights.** What the dream noticed — a step that keeps stalling, a question the person keeps being asked, a skill the process lacks — goes into dream memory.
+- **The log distiller.** A separate deterministic tool, not a model, prepares the harness logs a dream reads. It removes noise — code blocks, diffs, long tool outputs, repeated content — and summarizes nothing, so what the dream reads are the sessions' own words with the noise taken out. It keeps the identifiers that link every passage back to level 0 of the ladder, the journal, so an insight can always point to where it came from. It also redacts secret-shaped content, such as keys, tokens and passwords, that leaked into a transcript (curator-trust §20).
+- **Dream memory.** A separate store, quarantined until the person reviews it. The system roles read it and turn insights into proposals:
+  - **the designer** proposes improvements to a playbook, which wait for a batched touch like any other change to a process (§9.6);
+  - **the librarian** proposes consolidations of processes (§9.4);
+  - **the sysadmin** proposes improvements to the apiary itself — its profiles, its skills, the main loop's own process — as change sets to the apiary's repository, applied only with the person's consent (§12.1).
+
+  Nothing in dream memory changes a process or the apiary by itself, and nothing in it is an instruction to any session.
+- **Review.** Dream-memory insights join the monthly review (§13.4) and the batched confirmations; an insight the person rejects is kept as rejected, so the next dream does not propose it again.
+
 ## 14. Dependencies
 
 | Needs | From | Status |
@@ -770,7 +788,7 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 | KP0 | this draft, its diagrams, a refuter run |
 | KP1 | one node on existing harnesses: the detached root and the keeper package's profiles; the `keeper` command — `keeper` itself, `up`, `down`, `ls`, `chat` and its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive`, `route`, `create`, `wake`, the first ones wrapping today's `task-board session` commands; the login agent; the registry; supervision through the extracted session host with capability tokens; routing with a generative fallback and hints; creating a process from a template; the main loop's own process |
 | KP2 | channels through waggle providers; the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen, and approvals, grants and batched confirmations through it (on the app's own track) |
-| KP3 | the designer's generation and improvement proposals, with dream rehearsals once curator-playbook dream mode ships; the librarian; skill discovery and installation; the memory skill with its resolution ladder, files backend first |
+| KP3 | the designer's generation and improvement proposals, with dream rehearsals and the nightly dream cycle once curator-playbook dream mode ships; the librarian; skill discovery and installation; the memory skill with its resolution ladder, files backend first |
 | KP4 | the sysadmin: backup, restore, the token inventory, the trusted-skills list, skill updates; the watchdog |
 | KP5 | several nodes: joined processes, a head main loop, several operators |
 
@@ -801,6 +819,7 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 23. **The phone's permission prompts:** how grants are worded and grouped, how many confirmations seal a grant, and how yolo is shown (curator-trust).
 24. **The memory ladder:** the size bounds of each level and of the fact cards, when day, week and month summaries are written (at the first session of the next period, or on a schedule of the main loop's process), and the identifier format (§13.4).
 25. **Dream rehearsals:** which requests the designer rehearses by default, how long a rehearsal may run, and how its report is shown in the confirmation request (§9.2; curator-playbook §17.3 item 19).
+26. **The nightly cycle and dream memory:** when the cycle runs and its budget in tokens and time; the log distiller's rules and output format, and how its identifiers map onto level 0; how dream-memory insights are grouped for review and how long rejected ones are remembered (§13.6).
 
 ## 16. Change log: v0 → v0.1
 
@@ -855,4 +874,6 @@ Applied from the operator's discussion of 2026-09-25:
 | Memory as a resolution ladder: the journal, session, day, and week or month summaries, and bounded fact cards; identifiers on every line; `memory expand` and `memory search`; a snapshot at session start; capacity errors that force consolidation; optional write approval | §13.1, §13.2, §13.4 |
 | Role profiles decided; on-demand skills withdrawn (curator-spec #91 and curator #91 closed) | §13.5, §14, §15.2 item 21 |
 | Dream rehearsals by the designer before it asks for enablement, with the report in the confirmation request | §9.2, §9.3 |
-| New open questions 24 and 25 | §15.2 |
+| The keeper skill only in the `apiary` profile and the `keeper` command global, decided (curator-spec #95, curator #95; #91 closed) | §6.2 |
+| Dreams as the nightly cycle: replay of distilled logs through the deterministic log distiller, rehearsal, consolidation into the ladder, and a quarantined dream memory that the designer, librarian and sysadmin turn into proposals — playbooks under a batched touch, apiary change sets with consent | §13.6 |
+| New open questions 24–26 | §15.2 |
