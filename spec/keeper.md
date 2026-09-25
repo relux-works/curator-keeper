@@ -1,6 +1,6 @@
 # Main loop: specification
 
-Status: **DRAFT v0.3**, 2026-09-25. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Change logs: §16 (v0 → v0.1) and §17 (v0.1 → v0.2).
+Status: **DRAFT v0.4**, 2026-09-25. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3) and §19 (v0.3 → v0.4).
 
 One person runs several processes on one machine: a family calendar, the smart home, a hobby project, a small café. Each process has its own playbook, board and root orchestrator (curator-playbook `spec/process-configuration.md`). Something has to sit above them. It must:
 
@@ -35,7 +35,7 @@ Markers:
 - **pending operator decision**: named where it applies.
 
 Related documents:
-- curator-playbook `spec/process-configuration.md`, DRAFT v4.2 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
+- curator-playbook `spec/process-configuration.md`, DRAFT v4.3 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
 - relux-works/curator-trust `spec/trust.md`: who counts as a person, confirmations and their batching, capability grants, yolo mode, the companion app and pairing, secrets, and separation at the operating-system level;
 - waggle `spec/waggle.md` with Amendment A1: messages, doorbell, carriers, leases, board acts;
 - the session-host specification (`agent-session-host`);
@@ -509,7 +509,7 @@ When no process takes a request, the main loop matches it against published proc
 ### 9.6 Changing a process *(decided 2026-09-24)*
 
 - A change to a process's rules is a commit to the default branch of the process's repository (curator-playbook §2.4). No pull request and no hosting service is required; a project that uses one may keep it.
-- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.2 §2.4; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
+- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.3 §2.4; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
 - A change that a granted capability covers needs no touch. A change to the process's structure waits for one touch, and one touch covers every pending change. A hive may run in yolo mode (§11.5).
 - A process without git applies a new version only through the same confirmation.
 
@@ -754,6 +754,24 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
   2. **Rehearsal.** Processes with changes pending, or with failures the day saw, run again with `--dream` tools.
   3. **Consolidation.** The memory ladder gains the missing session and day summaries (§13.4), each line with its identifiers.
   4. **Insights.** What the dream noticed — a step that keeps stalling, a question the person keeps being asked, a skill the process lacks — goes into dream memory.
+- **Entering a dream** *(the operator's direction, 2026-09-25; the form is proposed)*. Nobody dreams by accident, and a dream never spends what the person did not allow.
+  - **A dream policy per orchestrator**, the main loop's own included. Each process states its policy in `policy.dreams` (curator-playbook §6.8, §6.13): time windows, a per-night budget of tokens and minutes, and conditions that must all hold:
+    - **idle:** no person attached to the session and no urgent message queued for it;
+    - **capacity**, any one of these:
+      - subscription quota remaining above a share;
+      - quota that would expire unused before its reset (use it or lose it);
+      - a local model engine that is ready or ensurable (curator-inference-manager);
+    - **AC power;**
+    - **within the per-night budget.**
+  - **The main loop schedules the dreams** of every process on the node within the node's capacity: the operator's machine capacity (`~/.curator/runtimes.toml`), the provider-limit state and the engines available. It never dreams two processes on one quota when one would exhaust it.
+  - **Approval once.** A process dreams only under a capability grant of the kind `dreams`, asked once per process (curator-trust §16). A dream cycle then needs no touch: nothing in a dream carries authority, and each proposal it produces takes the ordinary batched confirmation.
+  - **The sequence:**
+    1. The session host asks the orchestrator to park, and the orchestrator writes its park note (session-host specification).
+    2. The host stops the session.
+    3. The host starts a dream session with the role's **dream profile** on the dream sandbox. The dream profile is a Curator profile variant of the role's profile. It carries its own system-prompt modules ("you are dreaming: nothing here reaches the world…"), the dream-mode tools, the log distiller and the consolidation skills.
+    4. The dream writes consolidation into the memory ladder (§13.4), derived from real logs and within the memory budget. It also writes quarantined insights into dream memory and rehearsal reports.
+    5. As the policy says, the host then either resumes the normal session, from its goal, its park note and a pointer to the dream's report, or leaves it parked.
+  - **Waking.** A real high-priority doorbell wakes the dreamer: a message from a person, an escalation, an emergency. The host parks the dream in its own state and resumes the normal session at once.
 - **The log distiller.** A separate deterministic tool, not a model, prepares the harness logs a dream reads. It removes noise — code blocks, diffs, long tool outputs, repeated content — and summarizes nothing, so what the dream reads are the sessions' own words with the noise taken out. It keeps the identifiers that link every passage back to level 0 of the ladder, the journal, so an insight can always point to where it came from. It also redacts secret-shaped content, such as keys, tokens and passwords, that leaked into a transcript (curator-trust §20).
 - **Dream memory.** A separate store, quarantined until the person reviews it. The system roles read it and turn insights into proposals:
   - **the designer** proposes improvements to a playbook, which wait for a batched touch like any other change to a process (§9.6);
@@ -770,7 +788,7 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 | start a hosted session in a directory, detached, with a profile and a goal; attach in control or read-only mode, for `keeper chat` and `keeper watch`; park, stop and the emergency stop; doorbells into detached sessions; a session registry for the picker; per-session capability tokens; session events and telemetry for the watchdog | the session host (its own specification; `ax` later) | extracting today's daemon comes first (the operator's priority, 2026-09-24); closing access to the host is the first refactor after it (decided 2026-09-25); the rest is new |
 | `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; export and import of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; command-only installs, so `keeper` is on the person's `PATH` while the role stays in its profile | Curator (Decisions 0004, 0005, 0010, 0016, 0019, 0021; curator-spec issues #92, #93, #94, #95; curator issue #87; #91 closed) | profiles and overlays exist; the decisions are proposed; the issues are open |
 | messages, doorbell, local and NATS carriers, leases, messenger providers, a companion-app signer provider | waggle (CM1, CM2, providers; Amendment A1) | CM1 is next; A1 is written |
-| processes, hand-off, delegation semantics, skill policy, dream mode | curator-playbook | DRAFT v4.2 (the core) |
+| processes, hand-off, delegation semantics, skill policy, template parameters, dream mode | curator-playbook | DRAFT v4.3 (the core) |
 | who counts as a person, confirmations and their batching, capability grants, yolo, the companion app and pairing, secrets, separation at the operating-system level | relux-works/curator-trust `spec/trust.md` | DRAFT |
 | the memory skill | its own package, installed with the profiles | proposed (§13.4) |
 | local engines and models for the first run | curator-inference-manager | specified |
@@ -819,7 +837,7 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 23. **The phone's permission prompts:** how grants are worded and grouped, how many confirmations seal a grant, and how yolo is shown (curator-trust).
 24. **The memory ladder:** the size bounds of each level and of the fact cards, when day, week and month summaries are written (at the first session of the next period, or on a schedule of the main loop's process), and the identifier format (§13.4).
 25. **Dream rehearsals:** which requests the designer rehearses by default, how long a rehearsal may run, and how its report is shown in the confirmation request (§9.2; curator-playbook §17.3 item 19).
-26. **The nightly cycle and dream memory:** when the cycle runs and its budget in tokens and time; the log distiller's rules and output format, and how its identifiers map onto level 0; how dream-memory insights are grouped for review and how long rejected ones are remembered (§13.6).
+26. **The nightly cycle and dream memory:** the defaults of `policy.dreams` and how the main loop orders processes that compete for one night's capacity (the form is proposed in §13.6); the log distiller's rules and output format, and how its identifiers map onto level 0; how dream-memory insights are grouped for review and how long rejected ones are remembered (§13.6).
 
 ## 16. Change log: v0 → v0.1
 
@@ -877,3 +895,15 @@ Applied from the operator's discussion of 2026-09-25:
 | The keeper skill only in the `apiary` profile and the `keeper` command global, decided (curator-spec #95, curator #95; #91 closed) | §6.2 |
 | Dreams as the nightly cycle: replay of distilled logs through the deterministic log distiller, rehearsal, consolidation into the ladder, and a quarantined dream memory that the designer, librarian and sysadmin turn into proposals — playbooks under a batched touch, apiary change sets with consent | §13.6 |
 | New open questions 24–26 | §15.2 |
+
+## 19. Change log: v0.3 → v0.4
+
+Applied from the operator's answers of 2026-09-25 to v0.3:
+
+| Change | Where |
+| --- | --- |
+| References move to curator-playbook DRAFT v4.3, which makes loop limits template parameters a project tunes down to unbounded | Related documents, §9.6, §14 |
+| Entering a dream, proposed: a dream policy per orchestrator, the main loop included (windows, a per-night budget; the conditions idle, capacity, AC power and budget, where capacity is quota above a share, quota that would expire unused, or a ready or ensurable local engine) | §13.6 |
+| The main loop schedules dreams across processes within the node's capacity; approval once per process through the capability kind `dreams` | §13.6 |
+| The dream sequence: park, stop, a dream session with the role's dream profile on the sandbox, consolidation, insights and reports, then resume or stay parked; a real high-priority doorbell wakes the dreamer | §13.6 |
+| Open question 26 narrowed to the policy defaults and to ordering processes that compete for one night's capacity | §15.2 |

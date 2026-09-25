@@ -1,6 +1,6 @@
 # Track: main loop
 
-Status: **DRAFT v0.3**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
+Status: **DRAFT v0.4**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
 
 ## Why
 
@@ -43,7 +43,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Amendment A1 (board acts, hand-off results, delegation).
   - A companion-app signer provider.
 - **curator-playbook.**
-  - Processes, hand-off, delegation semantics, skill policy (DRAFT v4.2, the core).
+  - Processes, hand-off, delegation semantics, skill policy, template parameters (DRAFT v4.3, the core).
 - **curator-trust.**
   - Who counts as a person, confirmations and their batching, capability grants, yolo, standing answers under review, the companion app and pairing, secrets, separation at the operating-system level (relux-works/curator-trust `spec/trust.md`).
 - **curator-inference-manager.**
