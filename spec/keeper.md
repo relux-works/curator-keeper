@@ -105,7 +105,7 @@ Non-goals of this draft:
    - database migrations.
 
    An agent requests such an operation and never holds the means to perform it. A trusted executor — the kernel executor, the sysadmin's tooling or the companion app — performs it after authorization and, where the policy requires it, after a person's touch (curator-trust).
-5. **The emergency stop belongs to the authority plane.** `keeper estop` is an operator act that needs a person present. The session host and the kernel execute it; no model mediates it (§10.3).
+5. **The emergency stop belongs to the authority plane.** `keeper estop` is an operator act that needs a person present; the main loop may trigger it only under a delegation that names the trigger, and root orchestrators never. The session host and the kernel execute it; no model mediates it (§10.3).
 
 ## 2. Terms
 
@@ -521,8 +521,8 @@ When no process takes a request, the main loop matches it against published proc
 
 | Actor | Wake | Park | Stop | Converse (control) | Watch (read-only) | Emergency stop |
 | --- | --- | --- | --- | --- | --- | --- |
-| operator | every session | every session | every session | every session | every session | yes, and only the operator |
-| main loop | registered queens | registered queens | registered queens, only with a person's confirmation or a delegation | no | queens | no |
+| operator | every session | every session | every session | every session | every session | yes |
+| main loop | registered queens | registered queens | registered queens, only with a person's confirmation or a delegation | no | queens | only under a delegation that names the trigger (for example exhausted limits or a detected runaway), decided 2026-09-25 |
 | root orchestrator | its own sub-orchestrators and runs | the same | the same | no | its own sub-orchestrators | no |
 | sub-orchestrator | its own runs, inside its pool | the same | the same | no | no | no |
 | run | nothing | nothing | nothing | no | no | no |
