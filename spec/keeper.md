@@ -37,7 +37,7 @@ Markers:
 - **pending operator decision**: named where it applies.
 
 Related documents:
-- curator-playbook `spec/process-configuration.md`, DRAFT v4.3 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
+- curator-playbook `spec/process-configuration.md`, DRAFT v4.4 (the core): processes, root orchestrators, hand-off, delegation semantics, skill policy; a version of a process takes effect when the trust component reports it confirmed;
 - relux-works/curator-trust `spec/trust.md`: who counts as a person, confirmations and their batching, capability grants, yolo mode, the companion app and pairing, secrets, and separation at the operating-system level;
 - waggle `spec/waggle.md` with Amendment A1: messages, doorbell, carriers, leases, board acts;
 - the session-host specification (`agent-session-host`);
@@ -551,7 +551,7 @@ When no process takes a request, the main loop matches it against published proc
 ### 9.6 Changing a process *(decided 2026-09-24)*
 
 - A change to a process's rules is a commit to the default branch of the process's repository (curator-playbook §2.4). No pull request and no hosting service is required; a project that uses one may keep it.
-- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.3 §2.4; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
+- A committed change takes effect when the trust component reports it confirmed (curator-playbook DRAFT v4.4 §2.4; relux-works/curator-trust `spec/trust.md`). Meanwhile the kernel runs the last confirmed version in full.
 - A change that a granted capability covers needs no touch. A change to the process's structure waits for one touch, and one touch covers every pending change. A hive may run in yolo mode (§11.5).
 - A process without git applies a new version only through the same confirmation.
 
@@ -833,7 +833,7 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 | start a hosted session in a directory, detached, with a profile and a goal; attach in control or read-only mode, for `keeper chat` and `keeper watch`; park, stop and the emergency stop; doorbells into detached sessions; a session registry for the picker; per-session capability tokens; session events and telemetry for the watchdog; its command line `curator session …` | the session host (its own specification; `ax` later) | extracting today's daemon comes first (the operator's priority, 2026-09-24); closing access to the host is the first refactor after it (decided 2026-09-25); the rest is new |
 | `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; `profile export` and `profile restore` of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; command-only installs (`global add … --commands-only`), so `keeper` is on the person's `PATH` while the role stays in its profile; provider installs (`curator provider install|check`) and first-party providers beside `curator`, since `keeper up` needs `curator-run`; the operator-file commands `curator models` and `curator runtimes` | Curator (Decisions 0004, 0005, 0010, 0016, 0019, 0021; curator-spec issues #92, #93, #94, #95, #100; curator issues #87, #96; #91 closed) | profiles and overlays exist; the decisions are proposed; the issues are open |
 | messages, doorbell, local and NATS carriers, leases, messenger providers, a companion-app signer provider | waggle (CM1, CM2, providers; Amendment A1) | CM1 is next; A1 is written |
-| processes, hand-off, delegation semantics, skill policy, template parameters, dream mode | curator-playbook | DRAFT v4.3 (the core) |
+| processes, hand-off, delegation semantics, skill policy, template parameters, dream mode; the validator `curator playbook check`; `task-board trust confirm` and `task-board config status\|propose` | curator-playbook | DRAFT v4.4 (the core) |
 | who counts as a person, confirmations and their batching, capability grants, yolo, the companion app and pairing, secrets, separation at the operating-system level | relux-works/curator-trust `spec/trust.md` | DRAFT |
 | the memory skill and its package-prefixed command | its own package, installed with the profiles | proposed (§13.4) |
 | local engines and models for the first run, through `curator engines` | curator-inference-manager | specified |
@@ -973,4 +973,5 @@ Applied from the operator's adoption, on 2026-09-27, of the command-line shape i
 | One emergency stop, `keeper estop [<hive>]`, over `curator session estop` and the kernel's `task-board board snapshot`; runs park by the directive kind `park` | §10.3, §10.5 |
 | The person's decisions at the terminal: `keeper inbox`, `approve\|reject`, `confirm`, `grant\|revoke` (yolo and dreams are kinds), `review` and `device`, over `task-board trust …` | §11.1–§11.5, §13.6 |
 | The memory package's command takes its package's prefix, with `keeper memory` in front; the validator is `curator playbook check`; the per-role Curator profile is `spawn --profile` and `spawn.profile` | §6.2, §9.2, §13.4, §13.5 |
+| References move to curator-playbook DRAFT v4.4, which renames its commands to the same shape | Related documents, §9.6, §14 |
 | New open questions 27–29 | §15.2 |
