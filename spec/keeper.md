@@ -1,6 +1,6 @@
 # Main loop: specification
 
-Status: **DRAFT v0.5**, 2026-09-27. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Command-line shape: wiki `research/cli-shaping-review.md`, adopted 2026-09-27. Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3), §19 (v0.3 → v0.4) and §20 (v0.4 → v0.5).
+Status: **DRAFT v0.5.1**, 2026-09-28. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Command-line shape: wiki `research/cli-shaping-review.md`, adopted 2026-09-27. Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3), §19 (v0.3 → v0.4), §20 (v0.4 → v0.5) and §21 (v0.5 → v0.5.1).
 
 One person runs several processes on one machine: a family calendar, the smart home, a hobby project, a small café. Each process has its own playbook, board and root orchestrator (curator-playbook `spec/process-configuration.md`). Something has to sit above them. It must:
 
@@ -460,7 +460,9 @@ Not every role has a command:
 - the keeper skill exports `keeper`;
 - most process roles have none.
 
-### 7.7 Our own loop later *(proposed)*
+### 7.7 Our own loop later *(decided 2026-09-28)*
+
+The main loop runs on the existing harnesses, and our own loop is postponed. Being abstract over the agent harness is a core advantage and a selling point: a person keeps the harness they already pay for and can switch it without losing processes, boards or memory. This replaces the wording of 2026-09-24 that the core is our own loop.
 
 The minimal system runs entirely on existing harnesses. Our own lightweight loop (wiki `research/agent-loop.md`) becomes worth building for three things, none of them required now:
 - an always-on front on a small local model, cheaper than a full harness session kept idle; a harness bound to a local engine through a profile and curator-inference-manager already gets most of that, since engines install as packages and weights download through the inference manager;
@@ -844,7 +846,9 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 
 ## 15. Integration plan and open questions
 
-### 15.1 Integration plan *(proposed)*
+### 15.1 Integration plan *(proposed; KP1 terminal-only decided 2026-09-28)*
+
+KP1 is terminal-only: no channel and no tick. Channels come in KP2, and the tick with its user timer comes from curator-playbook PC3.
 
 | Step | Delivers |
 | --- | --- |
@@ -975,3 +979,12 @@ Applied from the operator's adoption, on 2026-09-27, of the command-line shape i
 | The memory package's command takes its package's prefix, with `keeper memory` in front; the validator is `curator playbook check`; the per-role Curator profile is `spawn --profile` and `spawn.profile` | §6.2, §9.2, §13.4, §13.5 |
 | References move to curator-playbook DRAFT v4.4, which renames its commands to the same shape | Related documents, §9.6, §14 |
 | New open questions 27–29 | §15.2 |
+
+## 21. Change log: v0.5 → v0.5.1
+
+Applied from the operator's answers of 2026-09-28:
+
+| Change | Where |
+| --- | --- |
+| Our own loop is postponed; the main loop runs on the existing harnesses, and harness abstraction is named as a core advantage and a selling point; replaces the 2026-09-24 wording | §7.7 |
+| KP1 is terminal-only: no channel and no tick | §15.1 |
