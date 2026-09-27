@@ -1,6 +1,6 @@
 # Main loop: specification
 
-Status: **DRAFT v0.4**, 2026-09-25. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3) and §19 (v0.3 → v0.4).
+Status: **DRAFT v0.5**, 2026-09-27. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Command-line shape: wiki `research/cli-shaping-review.md`, adopted 2026-09-27. Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3), §19 (v0.3 → v0.4) and §20 (v0.4 → v0.5).
 
 One person runs several processes on one machine: a family calendar, the smart home, a hobby project, a small café. Each process has its own playbook, board and root orchestrator (curator-playbook `spec/process-configuration.md`). Something has to sit above them. It must:
 
@@ -15,7 +15,9 @@ This specification describes that component, the **main loop**: precisely for on
 
 ## Names *(decided 2026-09-25)*
 
-People see the beekeeping names; this specification's prose uses the technical terms. The map below applies wherever a name first appears. Command lines, directories and profiles use the beekeeping names, because people type them: `keeper`, `keeper chat`, `keeper hive …`, `~/apiary`, `hives/`, the profile `apiary`.
+People see the beekeeping names; this specification's prose uses the technical terms. The map below applies wherever a name first appears.
+
+Beekeeping words appear only where people type them in the apiary: the `keeper` command and its nouns (`keeper hive …`), the apiary's directories (`~/apiary`, `hives/`) and the profile name `apiary`. Every kernel command, flag, configuration key and provider uses the technical terms, so `keeper.toml` lists `[processes.*]`, and task-board, the session host and Curator say process, session and runtime. The same rule stands in the session-host specification (Names) and in curator-playbook §16. *decided 2026-09-27*
 
 | Name | Technical term | What it is |
 | --- | --- | --- |
@@ -39,7 +41,8 @@ Related documents:
 - relux-works/curator-trust `spec/trust.md`: who counts as a person, confirmations and their batching, capability grants, yolo mode, the companion app and pairing, secrets, and separation at the operating-system level;
 - waggle `spec/waggle.md` with Amendment A1: messages, doorbell, carriers, leases, board acts;
 - the session-host specification (`agent-session-host`);
-- curator-spec Decisions 0010 (environment profiles), 0013 and 0019 (launch plans, one construction site) and 0021 (sessions enter through `curator run`, hosted through the `ax` contract); curator-spec issues #92 (source shorthands and default directories), #93 (export and import of profile declarations) and #94 (attestation fast path and signed bootstrap); curator issue #87 (the Go toolchain policy);
+- curator-spec Decisions 0010 (environment profiles), 0013 and 0019 (launch plans, one construction site) and 0021 (sessions enter through `curator run`, hosted through the `ax` contract); curator-spec issues #92 (source shorthands and default directories), #93 (`profile export` and `profile restore` of profile declarations), #94 (attestation fast path and signed bootstrap), #95 (command-only installs) and #100 (provider installs); curator issues #87 (the Go toolchain policy) and #96 (provider installs);
+- the command-line shape of `keeper`, `curator` and `task-board`: wiki `research/cli-shaping-review.md`, adopted 2026-09-27;
 - the agent-session-manager (`ax`) specification;
 - curator-inference-manager `spec/inference-plane.md`.
 
@@ -52,7 +55,7 @@ Related documents:
 - **The main loop and orchestrators talk over waggle.** A request goes in as a message, the session host rings the doorbell, and the orchestrator pulls the message; reports come back the same way. Child runs never talk to the main loop. *proposed*
 - **A registry points at separate repositories.** The main loop keeps a **process registry**, `keeper.toml`, in its own **root directory**. Processes are separate repositories the registry points at, never git submodules. Adding, removing or moving a process is authority-bearing and takes effect after a person confirms it. *proposed*
 - **Installation is detached from us, and fast.** The root is instantiated from a pinned, audited template package and becomes the person's own repository with no upstream to us. Our code reaches a node only through the Curator registry, audited and pinned. The installer uses the system's git and Go when they fit and never installs the full Xcode; a signed bootstrap and signed registry attestations replace a long local audit. *decided (2026-09-25)*
-- **One install brings everything.** The keeper package's `apiary` profile is the install unit: one `curator profile install relux-works/curator-playbook-keeper` brings the main loop's skill, the board tool, session-host tooling and the memory skill, and `keeper init` adds the system roles' profiles. One tool serves many boards. *proposed; the operator's direction (2026-09-25)*
+- **One install brings everything.** The keeper package's `apiary` profile is the install unit: one `curator profile install relux-works/curator-playbook-keeper` brings the main loop's skill, the board tool, session-host tooling and the memory skill. `keeper init` then adds the system roles' profiles and the Curator providers the node needs, which no profile can carry (§6.2). One tool serves many boards. *proposed; the operator's direction (2026-09-25)*
 - **`keeper` opens the conversation.** With no arguments it opens the conversation with the main loop, running `keeper up` first when the apiary is down. `keeper chat <hive>` talks with a hive's queen; `keeper watch <target>` only looks. *proposed; the operator's direction (2026-09-25)*
 - **`keeper up` is the single entry point.** It brings a node up — at login, after a reboot, or by hand — and resumes every hive from its goal and park note. `keeper down` parks everything; `keeper estop` stops everything at once. *proposed*
 - **Routing** follows a fixed order *(decided 2026-09-24)*:
@@ -65,6 +68,7 @@ Related documents:
 
   A fast classifier with typed outputs fits; the specification does not prescribe one.
 - **The main loop is a role plus a module.** The role is a skill any harness can run; the module is the `keeper` command and library that does the deterministic work. The minimal system runs entirely on existing harnesses. Our own lightweight loop is optional and later. *proposed*
+- **Three front doors, by audience.** `keeper` serves the person in an apiary. `curator` installs and configures the machine, and dispatches a noun it does not know to that noun's provider, `curator-<noun>` (`curator run`, `curator session`, `curator models`, …). `task-board` is the kernel that agents, the session host, the timer and `keeper` call. keeper's commands wrap the other two, and one verb keeps one meaning across all three (§7.2). *decided 2026-09-27*
 - **Processes are created, not configured by hand.** The main loop matches a request against published templates first. When none fits, the **process designer** generates a playbook, always starting from the simplest process that works. The **librarian**, a small process of its own on a timer, proposes merging near-duplicates and merges only after the person approves. *decided (2026-09-24)*
 - **System roles keep the node healthy.** The **sysadmin** backs the apiary up to the person's own remotes, restores it, keeps an inventory of tokens and updates skills. The **watchdog** watches context and provider limits and parks sessions before they run out. *decided in direction (2026-09-25); protocols proposed*
 - **The person talks and approves remotely.** Conversation goes through channels: the terminal first, then messengers through waggle providers. Approvals go through a **companion app** — on the phone in the common case, or on another computer — or through the operating system's user authentication on the machine. *decided (2026-09-24)*
@@ -119,7 +123,7 @@ Non-goals of this draft:
 | process registry | the main loop's list of the node's processes (§5.2) |
 | process package | a published playbook: a `curator-playbook-<purpose>` skill collection (curator-playbook §8) |
 | keeper package | the one package the root installs: the main loop's orchestrator skill, its template and its dependencies (§6.2) |
-| session host | the node's component that starts, keeps and wakes long-lived agent sessions (the session-host specification; today task-board's session daemon `tb-sessiond`) |
+| session host | the node's component that starts, keeps and wakes long-lived agent sessions (the session-host specification; today task-board's session daemon `tb-sessiond`); its command line is `curator session …`, which `keeper` fronts |
 | kernel | task-board's own code, which keeps boards and runs deterministic steps without a model |
 | operator | a person who administers the node and answers what only a person may decide |
 | external participant | an agent of another owner that works on one of our processes under a lease and signatures |
@@ -189,9 +193,9 @@ Three choices now keep all four ways open without a redesign:
 
 ```
 ~/apiary/                      the main loop's root: the person's own git repository, no upstream to us
-  curator/profiles.json        the node's profile and overlay declarations with their pins (§6.2; curator-spec #93)
+  curator/profiles.json        the node's profile and overlay declarations with their pins, from `curator profile export` (§6.2; curator-spec #93)
   Playbook.json                the main loop's own process: requests, routing, "a person is needed", system roles
-  keeper.toml                  the process registry (§5.2) and the node's defaults, such as the default harness (§7.4)
+  keeper.toml                  the process registry (§5.2); no machine facts: the default harness is an operator binding (§7.4)
   task-board.config.json       where the main loop's board lives
   .task-board/                 the main loop's board: requests and what became of them
   persona/                     the operator overlay: the persona (§13.2)
@@ -215,7 +219,6 @@ path        = "hives/family-calendar"        # relative to the root, or absolute
 remote      = "git@github.com:example/family-calendar.git"   # optional: the person's own remote (§12.1)
 node        = "home-mac"                     # the owning node
 role        = "calendar-orchestrator"        # the root orchestrator's role alias
-harness     = "claude"                       # optional: this process's default harness (§7.4)
 description = "The family's appointments, school events and reminders"
 channels    = ["telegram:family-chat"]       # conversations bound to this process
 
@@ -236,6 +239,7 @@ source  = "the person's answer, 2026-09-24"
 - `remote` is always the person's own remote (their GitHub, GitLab or any git server), used for backup and for cloning the process onto another node (§12.1). It never points at us.
 - `description` is what routing reads, so it says what the process handles in the person's words. The designer writes it and the person may edit it.
 - The registry holds declarations only. Which sessions run, and in which state, is runtime state the session host keeps, never committed.
+- **No machine facts.** Which harness runs a hive is not a registry key: it is an operator binding in `~/.curator/models.toml` (§7.4). The registry is committed, and a restore copies it to machines where that harness may not be logged in (§12.1). *decided 2026-09-27*
 
 ### 5.3 Separate repositories, not submodules *(proposed)*
 
@@ -257,7 +261,8 @@ The root ignores `hives/`, so the default location nests the processes on disk w
   - binding a channel to a process.
 
   They follow the rule curator-playbook applies to a process's configuration. The main loop may write them, as a commit to its root repository, but they take effect only after a person confirms the new version (§11.2).
-- **Which are not.** Descriptions, routing hints and a process's default harness only choose where and how a request is offered; every process still applies its own rules. The main loop writes hints from the person's answers (§8.3), and they take effect at once.
+- **Which are not.** Descriptions and routing hints only choose where a request is offered; every process still applies its own rules. The main loop writes hints from the person's answers (§8.3), and they take effect at once.
+- **The commands.** `keeper hive add`, `keeper hive remove` and `keeper hive set <hive>` write the entries; moving a process is `keeper hive set <hive> --path <dir>` (§7.2).
 
 ## 6. Installation from zero
 
@@ -283,13 +288,14 @@ curator profile install relux-works/curator-playbook-keeper
 | the keeper skill | `full` | the main loop's role, its process template and the `keeper` command |
 | task-board | `runtime`, narrowed to the `task-board` command | the board tool: the kernel, spawns, the session daemon today |
 | session-host tooling | `runtime`, narrowed to its commands | the session host, until it ships inside task-board's successor |
-| the memory skill | `runtime`, narrowed to the `memory` command | notes with provenance (§13.4) |
+| the memory skill | `runtime`, narrowed to the memory package's command | notes with provenance (§13.4) |
 | waggle tooling | `runtime`, once waggle CM1 ships | mail, doorbell, providers |
 
-- **The `keeper` command on the person's `PATH`.** The profile's skills reach only the apiary's own sessions, but the person types `keeper` in any terminal. The installer therefore also declares the keeper skill globally with activation `runtime`: commands only, no context. That publishes the `keeper` shim without materializing the main loop's role anywhere (curator-spec issue #95, curator issue #95). Until it ships, `keeper` reaches the person's `PATH` only while `apiary` is the machine-current profile, through Curator's forwarding of that profile's commands (curator-spec Decision 0016). *decided 2026-09-25: the keeper skill lives only in the `apiary` profile, and the `keeper` command is global (curator-spec #95, curator #95; the on-demand route, curator-spec #91 and curator #91, is closed)*
+- **The `keeper` command on the person's `PATH`.** The profile's skills reach only the apiary's own sessions, but the person types `keeper` in any terminal. The installer therefore also adds the keeper skill globally with `curator global add … --commands-only`: commands only, no context. That publishes the `keeper` shim without materializing the main loop's role anywhere (curator-spec issue #95, curator issue #95; the lock may still record the activation as `runtime`). Until it ships, `keeper` reaches the person's `PATH` only while `apiary` is the machine-current profile, through Curator's forwarding of that profile's commands (curator-spec Decision 0016). *decided 2026-09-25: the keeper skill lives only in the `apiary` profile, and the `keeper` command is global (curator-spec #95, curator #95; the on-demand route, curator-spec #91 and curator #91, is closed)*
 
+- **Curator's providers are installed, not carried by a profile.** `curator <noun>` dispatches to an executable named `curator-<noun>`, found only on Curator's trust roots, so no profile or skill can deliver one. The node needs `curator-run` for `keeper up` (§7.3) and `curator-session` for keeper's session commands (§7.2), and later `curator-models`, `curator-runtimes`, `curator-engines`, `curator-network` and `curator-playbook`. First-party providers ship beside `curator` in its signed release. `keeper init` runs `curator provider install <noun>` for each one the node lacks, `run` and `session` first, and `curator provider check` afterwards (curator-spec issue #100, curator issue #96). *decided 2026-09-27*
 - **One version to update.** Every profile of the node pins the same keeper package version, so updating the package updates the set.
-- **The declarations are committed.** The node's profile and overlay declarations, with their pins, are exported into the root's `curator/profiles.json` (curator-spec issue #93). The root repository therefore describes exactly what the node runs, and restore re-creates it (§12.1).
+- **The declarations are committed.** The node's profile and overlay declarations, with their pins, are exported into the root's `curator/profiles.json` with `curator profile export`, and `curator profile restore` reads them back (§12.1; curator-spec issue #93, which names the restore side `restore` because `curator profile import` already means something else). The root repository therefore describes exactly what the node runs, and restore re-creates it.
 - **One tool, many boards.** The `task-board` command is installed once per node: a Curator command shim has exactly one owner and one version on a node. Every process's board is data in that process's own repository (`.task-board/`). The keeper package and every process's orchestrator skill declare the board tool as a dependency so that Curator can check they agree; a process whose skills demand another version of the tool is refused with both requirement chains, never installed beside it.
 
 ### 6.3 Built from source *(decided 2026-09-25)*
@@ -307,16 +313,22 @@ curator profile install relux-works/curator-playbook-keeper
 3. **The main loop's profile.** `curator profile install relux-works/curator-playbook-keeper` (§6.2).
    - A package whose content matches a signed `audited` record of a trusted registry installs on that record, with no long local audit. Only a package without such a record is audited locally, or refused, by policy (curator-spec issue #94).
    - A long local audit would not protect the bootstrap anyway: a compromised installer could skip any local check. What protects it is the verified signature of the installer and of every package.
-4. **The root.** `keeper init` — the command the keeper skill brings — instantiates `~/apiary` from the template package (§6.1), installs the system roles' profiles (§6.2), initializes the main loop's board and makes the first commit.
+4. **The root.** `keeper init` — the command the keeper skill brings — instantiates `~/apiary` from the template package (§6.1), then runs, in order:
+   - `curator profile install` for the system roles' profiles, `designer`, `librarian`, `sysadmin` and `watchdog`, at the keeper package's pinned version (§6.2);
+   - `curator provider install` for each Curator provider the node lacks, `run` and `session` first (§6.2);
+   - `task-board init` for the main loop's board, and `task-board trust init`, which records the operator as the anchor principal (curator-trust);
+   - the first commit.
+
+   Pairing (step 7, `keeper device pair`) and the login agent (step 9) complete it.
 5. **A model to talk with.** The main loop needs a model before it can talk. Curator checks the hardware against the minimum requirements published with the model registry, and the installation takes one of two branches:
-   - **(A) The hardware suffices.** Before downloading anything, the installer states what it will fetch — the engine and the model, their size in gigabytes, the disk space needed and the expected time — and asks. The person may take branch B instead. On yes, Curator installs an inference engine package and a small local model through curator-inference-manager (`~/.curator/engines.toml`), and the main loop starts on it at once. It greets the person with a short questionnaire: connect subscriptions? which harnesses (Claude Code, Codex, Muse Code, others)? Each yes becomes a runtime binding in `~/.curator/runtimes.toml`.
-   - **(B) Semi-automatic harness setup.** The installer detects the popular harnesses already installed and whether each is logged in. For each missing one it prints the shortest path — the install command and the login command — and checks the result. The first logged-in harness becomes the node's default harness. When no logged-in harness can be detected, `keeper init` lists the installed harnesses and asks which one becomes the default (§7.4). The main loop starts on it.
+   - **(A) The hardware suffices.** Before downloading anything, the installer states what it will fetch — the engine and the model, their size in gigabytes, the disk space needed and the expected time — and asks. The person may take branch B instead. On yes, Curator installs an inference engine package and a small local model through curator-inference-manager (`curator engines add`, `~/.curator/engines.toml`), and the main loop starts on it at once. It greets the person with a short questionnaire: connect subscriptions? which harnesses (Claude Code, Codex, Muse Code, others)? Each yes becomes a runtime binding in `~/.curator/runtimes.toml` (`curator runtimes add`).
+   - **(B) Semi-automatic harness setup.** The installer detects the popular harnesses already installed and whether each is logged in. For each missing one it prints the shortest path — the install command and the login command — and checks the result. The first logged-in harness becomes the node's default harness, recorded as the operator's `@orchestrator` binding (§7.4). When no logged-in harness can be detected, `keeper init` lists the installed harnesses and asks which one becomes the default. The main loop starts on it.
 
    Later, harnesses may be authenticated through the chat, with the device codes a harness prints relayed to the person. The first versions log in by hand.
 6. **Channels.** The main loop offers to connect messengers (Telegram, WhatsApp and others) through waggle providers, so the person can write to it from the phone (§11.1). Until then the terminal is the channel: `keeper`.
 7. **The companion app.**
    1. `keeper init` asks which phone the person uses, iOS or Android. It shows a QR code of the app's download link in the terminal, rendered with a Go library such as `mdp/qrterminal`, with a short link as fallback.
-   2. Once the app is installed, `keeper init` shows the pairing QR code in the terminal, with a pairing code as fallback, and the node and the app pair (§11.3). A headless node pairs by the methods of §11.3.
+   2. Once the app is installed, `keeper init` runs `keeper device pair`: it shows the pairing QR code in the terminal, with a pairing code as fallback, and the node and the app pair (§11.3). A headless node pairs by the methods of §11.3. The person can run `keeper device pair` again later, for another device.
    3. From then on, approvals, delegations and confirmations reach the person anywhere.
 8. **The first process.** The person asks: "what can you do?", "keep our family calendar". The main loop proposes processes from the published packages, and the designer creates the chosen one (§9).
 9. **The login agent.** The installer registers a user-level login agent that runs `keeper up` at every login (§10.6).
@@ -334,7 +346,10 @@ $ curl -fsSL https://relux.works/apiary/install.sh | sh
     build: keeper ok, task-board ok
   keeper init
     root:        ~/apiary (a new repository of yours, no upstream)
+    profiles:    designer, librarian, sysadmin, watchdog ok
+    providers:   curator-run, curator-session ok
     board:       ~/apiary/.task-board ok
+    trust:       you are the anchor operator ok
     login agent: keeper up at every login ok
   A local model? qwen3.6-27b: 17.8 GB to download, ~24 GB on disk, ~12 min. Start? [y/N] n
   Harnesses: Claude Code (logged in), Codex (not logged in) → default: claude
@@ -364,48 +379,75 @@ The model decides; the command does.
 
 The `keeper` command and its library do the deterministic work, with `--json` output for agents and people alike. Commands that act on sessions go through the session host, which checks who may do what (§10.2).
 
-| Command | Does |
-| --- | --- |
-| `keeper` | opens the conversation with the main loop: runs `keeper up` first when the apiary is down, then connects the terminal to the main loop's session |
-| `keeper up [--harness H]` | brings the node up: the session host, the main loop's session, and every owned hive's queen, each resumed from its goal and park note (§10.6); does nothing for what already runs |
-| `keeper down` | parks every session, queens first and the main loop's session last (§10.5); the session host keeps running |
-| `keeper ls` | the node's sessions: the main loop, each queen, their sub-orchestrators, with state, harness and last activity |
-| `keeper chat [hive]` | a conversation with a hive's queen; without a hive it opens a picker over the session host's registry (§7.5) |
-| `keeper watch <target>` | a read-only view of any session: the main loop, a queen or a sub-orchestrator |
-| `keeper park <target>`, `keeper stop <target>` | parks or stops a session: a hive name means its queen; a session id means that session |
-| `keeper estop` | the emergency stop (§10.3) |
-| `keeper status` | the node: processes, sessions, questions waiting for the person |
-| `keeper harness default <name>` | sets the node's default harness (§7.4) |
-| `keeper hive list`, `keeper hive show <hive>` | the registry, with each process's state: running, parked, stopped, unreachable |
-| `keeper hive add`, `remove`, `move` | proposes a registry change, which takes effect after confirmation (§5.4) |
-| `keeper route "<text>" [--channel C] [--from P]` | the candidate processes with scores and reasons (§8) |
-| `keeper create --template <package>` or `--design "<text>"` | creates a process (§9.3) |
-| `keeper wake <hive> [--message …]` | starts or wakes a queen and delivers a message (§10) |
+keeper holds no session, trust or board logic of its own: each command wraps `curator session …`, `curator run`, `curator` operator-file commands or `task-board` kernel commands, named in the third column. *The map is decided (2026-09-27); the table's details are proposed.*
 
-`keeper` and `keeper chat` show the session's harness exactly as it runs — the Claude Code or Codex interface — so the person can read it and type into it; `keeper watch` shows the same without input. Leaving leaves the session running. Underneath, all three use the session host's attach operation, in control or read-only mode.
+| Command | Does | Calls |
+| --- | --- | --- |
+| `keeper` | opens the conversation with the main loop: runs `keeper up` first when the apiary is down, then connects the terminal to the main loop's session | `curator session attach`, in control mode |
+| `keeper init`, `keeper restore <remote>` | a new apiary (§6.4), or the apiary from its backup (§12.1) | the steps of §6.4 and §12.1 |
+| `keeper up [--harness <runtime>]` | brings the node up: the session host, the main loop's session, and every owned hive's queen, each resumed from its goal and park note (§10.6); does nothing for what already runs | `curator run <runtime> --profile <role profile>` in each hive's directory (§7.3) |
+| `keeper down` | parks every session, queens first and the main loop's session last (§10.5); the session host keeps running | `curator session park` for each |
+| `keeper status` | one screen: the hives, their sessions, the decisions waiting for the person, and the yolo banner while yolo lasts (§11.5) | the host's status; `task-board q 'summary()'` and `task-board config status` in each hive |
+| `keeper chat [<hive>]` | a conversation with a hive's queen; without a hive it opens a picker over the session host's registry (§7.5) | `curator session attach`, in control mode |
+| `keeper watch <target>` | a read-only view of any session: the main loop, a queen or a sub-orchestrator | `curator session watch` |
+| `keeper wake <hive> [--message <text>]` | starts or wakes a queen and delivers a message (§10.1) | the host's start or wake, and a waggle `coord.request` |
+| `keeper park <target>`, `keeper stop <target>` | parks or stops a session or a run (§10.5) | `curator session park\|stop`; for a run, `task-board spawn directive <RUN> park\|cancel` |
+| `keeper estop [<hive>]` | the emergency stop, of the node or of one hive (§10.3) | `curator session estop` |
+| `keeper route "<text>" [--channel C] [--from P] [--dry-run]` | routes a request (§8); `--dry-run` only prints the candidates with scores and reasons | the classifier and the registry |
+| `keeper ask "<text>"` | a request without a conversation, for scripts and timers; prints the answer | `keeper route`, then the chosen hive |
+| `keeper inbox` | every decision waiting for the person, across hives: confirmations, capability requests, approvals, co-signatures, quarantined messages and memory writes (§11.2) | `task-board trust status` and `task-board mail list` in each hive; the memory package |
+| `keeper approve <id>`, `keeper reject <id>` | decides one pending item (§11.2) | by the item's kind: `task-board mail approve\|reject`, a board approval, or the memory package's `approve` |
+| `keeper confirm [<hive>]` | one batched touch for every pending change of one hive, or of all (§9.6, §11.5) | `task-board trust confirm` in each hive |
+| `keeper grant <hive>\|--all <kind>[:<name>] [--for <duration>]`, `keeper revoke …` | grants or revokes a standing permission; `yolo` and `dreams` are kinds (§11.5, §13.6) | `task-board trust grant\|revoke` |
+| `keeper review` | the monthly review: standing answers, grants, memory notes and dream insights (§11.4, §13.4, §13.6) | `curator models review`, `task-board trust status`, the memory package's review |
+| `keeper session list`, alias `keeper ls` | the node's sessions: the main loop, each queen, their sub-orchestrators, with state, runtime and last activity | `curator session list` |
+| `keeper hive list`, `keeper hive show <hive>` | the registry, with each process's state: running, parked, stopped, unreachable | the registry and `curator session list` |
+| `keeper hive add --template <package>\|--design "<text>"\|--path <dir>\|--clone <url>` | creates a process from a template or by design (§9.3), or registers an existing directory or repository; takes effect after confirmation (§5.4) | the designer: `curator profile install`, `curator playbook check`, a dream, then `task-board trust confirm` |
+| `keeper hive remove <hive>`, `keeper hive set <hive> …` | changes the registry — path, remote, owning node, root role, description — after confirmation (§5.4); `hive set <hive> --harness <runtime>` writes the operator binding instead (§7.4) | a commit to the root; `curator models set` |
+| `keeper hint list`, `keeper hint remove <id>` | the routing hints (§8.3) | the registry |
+| `keeper channel list\|add\|remove` | the messenger channels (§11.1) | waggle's providers |
+| `keeper device list\|pair\|revoke` | the companion app and the other devices that sign for the person (§11.3) | `task-board trust keys list\|add\|revoke` |
+| `keeper harness list`, `keeper harness set <runtime>`, alias `keeper harness default` | the runtimes the node can run, and the default for the main loop and the queens (§7.4) | `curator runtimes list`; `curator models set @orchestrator <runtime>/*` |
+| `keeper memory add\|search\|expand\|forget\|review\|approve` | the notes of the main loop and the queens (§13.4) | the memory package's command |
+| `keeper backup status\|now` | the backup's last push and what is pending; a push now (§12.1) | the sysadmin's executor |
+| `keeper host status\|logs\|doctor\|restart` | the session host itself | `curator session status\|logs\|doctor\|restart` |
+
+- **Targets.** A `<target>` is a hive, meaning its queen; `<hive>/<RUN-ID>`, a run; or a session id.
+- **One verb vocabulary** across keeper, curator and task-board: `list`, `show`, `status`, `add|remove` for entries of a set, `set|unset` for settings, `check`, `explain`, `confirm` for a version of a configuration, `approve|reject` for one item, `grant|revoke` for a standing permission, and the lifecycle verbs `up`, `down`, `wake`, `park`, `stop`, `estop`, `chat` and `watch`.
+- **The person's decisions stay the person's.** `keeper confirm`, `approve`, `reject`, `grant`, `revoke` and `device` refuse to run in an agent session, because the kernel commands they call do (curator-trust).
+- **Folded commands.** `keeper create` became `keeper hive add --template|--design`, and `keeper hive move` became `keeper hive set <hive> --path`. `keeper ls` and `keeper harness default` stay as aliases.
+
+`keeper` and `keeper chat` show the session's harness exactly as it runs — the Claude Code or Codex interface — so the person can read it and type into it; `keeper watch` shows the same without input. Leaving leaves the session running. Underneath, all three use the session host's `curator session attach`, in control mode, or `curator session watch`.
 
 ### 7.3 What `keeper up` runs: the launch nesting *(proposed)*
 
 A session starts through five layers, each with one job:
 
-1. **`curator`** is the umbrella command. `curator run` dispatches to the `curator-run` provider, found on a trust root.
+1. **`curator`** is the umbrella command. `curator run` dispatches to the `curator-run` provider, found on a trust root, where `keeper init` installed it (§6.2).
 2. **`curator-run`** resolves the environment profile into a fragment: the harness's managed home (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`), the root context, the skills, the MCP set and the system-prompt channel (Decision 0010).
 3. **The agents-management launch plane** turns the harness, model and effort into argv and environment through the harness's plugin. `curator-run` composes that plan and the fragment into exactly one launch plan (Decisions 0013, 0019).
 4. **The session host** receives the plan and hosts the process (Decision 0021, through the `ax start --launch-plan` contract; task-board's session daemon bridges it today). It binds the session to the process's primary goal and injects the goal, with the park note if there is one.
 5. **The harness** runs in the hive's directory with its managed home, detached, until someone attaches.
 
-`keeper up` for a hive is layers 1–5 with the hive's directory, the hive's profile and the harness chosen by §7.4.
+`keeper up` for a hive runs `curator run <runtime> --profile <role profile>` in the hive's directory: layers 1–5, with the runtime chosen by §7.4 and the role profile the hive's registry entry names (§13.3).
 
-### 7.4 Which harness *(proposed; the operator's direction, 2026-09-25)*
+### 7.4 Which harness *(proposed; the operator's direction, 2026-09-25; where it is recorded, decided 2026-09-27)*
 
-- **Any harness with a session-host adapter** can run the main loop or a queen: Claude Code, Codex, Muse Code, a harness bound to a local engine.
-- **The node's default harness** is the first logged-in harness `keeper init` finds (§6.4 step 5), recorded in `keeper.toml`. When no logged-in harness can be detected, `keeper init` lists the installed ones and asks which becomes the default.
-- **Changing it:** `keeper harness default <name>`.
-- **Overrides**, from the most specific: a flag on the command (`keeper up --harness codex`), a process's `harness` in the registry, the operator's bindings in `~/.curator/models.toml` for the role (curator-playbook §2.3).
+- **Any harness with a session-host adapter** can run the main loop or a queen: Claude Code, Codex, Muse Code, a harness bound to a local engine. Commands name it by its runtime id — `claude`, `codex`, `muse`, `pi`, or a binding id from `~/.curator/runtimes.toml` — the same values `curator run` and `task-board spawn --runtime` take.
+- **The node's default harness** is the first logged-in harness `keeper init` finds (§6.4 step 5). When no logged-in harness can be detected, `keeper init` lists the installed ones and asks which becomes the default.
+- **Where it is recorded.** The default is the operator's `@orchestrator` binding in `~/.curator/models.toml` (curator-playbook §2.3). It matches the main loop and every queen, because every root role has the capability `orchestrator`. It is a machine fact, so it never goes into the committed `keeper.toml`, which a restore copies to machines where that harness may not be logged in (§12.1).
+- **Changing it:** `keeper harness set <runtime>`, which runs `curator models set @orchestrator <runtime>/*`; `keeper harness default <runtime>` stays as an alias. `keeper harness list` shows the runtimes the node can run (`curator runtimes list`).
+- **Overrides**, from the most specific:
+  1. a flag on the command (`keeper up --harness codex`);
+  2. the operator's binding for a hive's root role, `<playbook>/<role>`, which `keeper hive set <hive> --harness <runtime>` writes; it applies to every hive of that playbook, because bindings have no per-project key (§15.2 item 29);
+  3. the `@orchestrator` binding.
+
+  keeper resolves the runtime and passes it to `curator run` as its operand (§7.3).
 
 ### 7.5 The session registry and the picker *(proposed)*
 
 - The session host keeps a registry of the sessions it hosts: id, process, role, harness, state, and how to resume it (a native resume identity or the goal and park note).
+- `keeper session list`, alias `keeper ls`, prints that registry through `curator session list`.
 - `keeper chat` without a hive opens a small terminal picker over that registry. Choosing a session opens the conversation with it, or a read-only view. Each harness resumes differently, and the session host's adapters hide the difference, as task-board's session daemon already does for Claude Code and Codex.
 - The person converses with the main loop and the queens, and may watch sub-orchestrators too; short-lived runs are observed through their transcript.
 
@@ -478,7 +520,7 @@ When no process takes a request, the main loop matches it against published proc
 ### 9.2 The process designer
 
 - **It always exists.** It is installed with the root (§6.2).
-- **It writes a `Playbook.json` when no template fits**, extending the closest template where there is one. The validator checks it (`playbook validate`), and the refuter may challenge it.
+- **It writes a `Playbook.json` when no template fits**, extending the closest template where there is one. The validator checks it (`curator playbook check`), and the refuter may challenge it.
 - **It starts from the simplest process that works:** the fewest states, roles and fields that carry the request. It adds complexity only on evidence: repeated escalations, recurring manual steps, reviews that keep failing. *decided (2026-09-24)*
 - **It keeps processes alive.** The main loop measures each process: throughput, rework, time spent waiting on people, escalations. The designer proposes improvements the way a bug on a board is fixed: a change to the process's `Playbook.json`, validated, then confirmed (§9.6). *decided (2026-09-24)*
 - **It rehearses before it asks.** Before asking for a new process to be enabled, or for a change to take effect, the designer runs it in a dream (curator-playbook §6.13): every tool runs with `--dream` against a copy of the board, nothing reaches the real world, and the agents know they are dreaming. The dream's report — which steps were reached, where it stalled — goes with the confirmation request, as evidence of a rehearsal, never of real work. *proposed (2026-09-25)*
@@ -489,7 +531,7 @@ When no process takes a request, the main loop matches it against published proc
 2. The draft passes the validator, and the skills the process needs are installed (§9.5).
 3. The designer rehearses the draft in a dream (§9.2) and attaches the report. *proposed*
 4. The draft is committed in the new repository, and the registry entry is written.
-5. The person confirms (§11.2), with the dream report in front of them. One confirmation covers the process's configuration and the registry entry together.
+5. The person confirms (`keeper confirm`, §11.2), with the dream report in front of them. One confirmation covers the process's configuration and the registry entry together.
 6. The main loop starts the root orchestrator (§10.1) and hands it the request that led here.
 
 ### 9.4 The librarian
@@ -534,16 +576,16 @@ When no process takes a request, the main loop matches it against published proc
 - **Authority only narrows** down the table (§1.1).
 - **Before waggle CM2** the session host enforces the table with per-session capability tokens: every session it starts receives a token that names exactly the sessions it may act on and how. The operator's commands come from the operator's terminal outside every agent session. That is a guardrail against well-behaved agents, not a boundary, because everything runs as one operating-system user — except the emergency stop, which needs the person present (§10.3).
 - **From CM2** these acts are signed waggle `cmd` messages, in the `halts` category that a process's signature policy may cover (curator-playbook §4.2). The session host verifies each against the roster and the sender's session certificate before executing it, and the orchestrator's model is only informed (waggle §5).
-- **The operator's command line:** `keeper ls`, `keeper watch`, `keeper stop`, `keeper park`, `keeper estop`. Today: `task-board session list`, `task-board session stop SES-…` (it stops a session without clearing its goal), and `task-board spawn directive <RUN> cancel` for a run. The first `keeper` commands wrap these, so the person no longer types `task-board session …`.
+- **The operator's command line:** `keeper session list` (alias `keeper ls`), `keeper watch`, `keeper stop`, `keeper park`, `keeper estop`. They wrap the session host's `curator session list|watch|stop|park|estop` and, for a run, `task-board spawn directive <RUN> park|cancel` (§7.2). Today the host's commands are `task-board session list` and `task-board session stop SES-…`, which stops a session without clearing its goal; `task-board session …` stays an alias of `curator session …` for one release after the node host lands (session-host specification). The person types neither: keeper fronts both.
 
 ### 10.3 The emergency stop *(proposed)*
 
-- **A name nobody types by accident.** `keeper estop` asks for the phrase "EMERGENCY STOP" and the operator's presence: operating-system user authentication on the node or the companion app (§11.2).
-- **What it does, at once and without a model:**
-  - the kernel writes a snapshot on every board: runs in flight, Change Requests awaiting review or integration, obligations;
-  - every run is stopped so that it can resume, where the harness allows it;
-  - every session on the node is stopped; no goal is cleared;
-  - the scheduler (`task-board tick`) and tool invocations pause.
+- **One command, and a phrase nobody types by accident.** `keeper estop [<hive>]` is the only emergency stop, of the whole node or of one hive. It asks for the phrase "EMERGENCY STOP" and the operator's presence: operating-system user authentication on the node or the companion app (§11.2). No kernel command spells an emergency stop, and the kernel's `--confirm` stays a plain acknowledgement of a destructive act. *decided 2026-09-27*
+- **What it does, at once and without a model.** `keeper estop` calls the session host's `curator session estop`, which, for the node or the hive:
+  - runs `task-board board snapshot` on every board, which records runs in flight, Change Requests awaiting review or integration, and obligations;
+  - stops every run so that it can resume, where the harness allows it;
+  - stops every session; no goal is cleared;
+  - pauses the scheduler (`task-board tick`) and tool invocations.
 - **Coming back** is an ordinary `keeper up` (§10.6). Every session reads its board and the snapshot first.
 - **`keeper down` is the calm version:** each session writes its own park note before it stops (§10.5).
 
@@ -559,9 +601,10 @@ When no process takes a request, the main loop matches it against published proc
 
 ### 10.5 Parking *(proposed; the park note itself is the session-host specification's)*
 
-- `keeper park <target>` asks the session to write a park note. The note is bound into the process's goal, and the session stops without clearing the goal.
+- `keeper park <target>` asks the session, through the session host's `curator session park`, to write a park note. The note is bound into the process's goal, and the session stops without clearing the goal.
 - The next start injects the goal with the note, so the session reads the note first and continues (principle 1).
 - `keeper down` parks every session: queens first, the main loop's session last.
+- **Runs park by directive.** A queen parks one of its sub-orchestrators, and the person parks a run (`keeper park <hive>/<RUN-ID>`), with the directive kind `park`: `task-board spawn directive <RUN> park`. *decided 2026-09-27*
 
 ### 10.6 After a reboot: `keeper up` *(proposed; the single entry point the operator asked for, 2026-09-25)*
 
@@ -586,7 +629,7 @@ The main loop does not relay work between processes. Processes hand work to each
 ### 11.1 Channels *(proposed)*
 
 - **The terminal first:** `keeper`.
-- **Messengers through waggle providers** (Telegram, WhatsApp, others). They are consoles and carriers that are untrusted pipes (waggle §9). What the person writes there enters as low-authority `coord`: it can ask and answer, never approve.
+- **Messengers through waggle providers** (Telegram, WhatsApp, others), managed with `keeper channel list|add|remove`. They are consoles and carriers that are untrusted pipes (waggle §9). What the person writes there enters as low-authority `coord`: it can ask and answer, never approve.
 - **A channel may be bound to a process** (§5.2); everything written there routes to that process.
 
 ### 11.2 Approvals and confirmations *(decided 2026-09-24)*
@@ -604,13 +647,15 @@ They go through one of two paths:
 
 The main loop presents the request, says what it is for, and waits. The answer is recorded with its signature.
 
+At the terminal the person sees every pending decision in `keeper inbox` and answers with `keeper confirm` (a new version of a process), `keeper approve|reject <id>` (one item) or `keeper grant|revoke` (a standing permission, §11.5). Underneath are `task-board trust …` and `task-board mail approve|reject`, which refuse agent sessions (curator-trust). *decided 2026-09-27*
+
 ### 11.3 The companion app *(proposed; its own specification comes later)*
 
 What the main loop needs from it:
 
 - **One app over one abstraction.** The app keeps its keys in the platform's secure storage — the Secure Enclave on iPhone and Mac, Android's hardware-backed keystore, a TPM through Windows Hello or on Linux — behind biometrics or the device's own user verification. The same app runs on every platform through that one abstraction, starting with one platform. *the operator's direction (2026-09-25)*
 - **A Mac can be the control panel.** The app may run on a computer as well as a phone. A Mac can hold the companion app, run the head main loop and a sysadmin role for the apiary's other nodes, such as a dedicated server.
-- **Pairing, with and without a screen.** Node and app exchange public keys and pin each other, so no server in between can substitute a key:
+- **Pairing, with and without a screen.** `keeper device pair` starts it, `keeper device list` shows the paired devices, and `keeper device revoke` removes a lost one (`task-board trust keys …`). Node and app exchange public keys and pin each other, so no server in between can substitute a key:
   - by a QR code the node renders in the terminal (with a Go library such as `mdp/qrterminal`) or on a page, which the app scans, with a pairing code as fallback. Before pairing, the node shows the app's download link the same way, after the person chose iOS or Android (§6.4 step 7);
   - headless, by a short pairing code the node prints over the operator's SSH session: the person types it into the app, and both sides then show a short authentication string derived from the exchanged keys, which the person compares;
   - headless, from an already paired workstation that reaches the node over SSH and relays the pairing;
@@ -622,13 +667,13 @@ What the main loop needs from it:
 
 ### 11.4 Standing answers under review *(decided 2026-09-24)*
 
-The operator's files may hold open-ended standing answers (curator-playbook §2.3, §9). Once a month the main loop lists every such answer, with when it last applied and how often, and asks the person to keep or withdraw each one. An answer the person does not re-confirm within one period stops applying until it is re-confirmed (curator-trust `spec/trust.md`).
+The operator's files may hold open-ended standing answers (curator-playbook §2.3, §9). Once a month the main loop lists every such answer in `keeper review`, with when it last applied and how often, and asks the person to keep or withdraw each one. An answer the person does not re-confirm within one period stops applying until it is re-confirmed (curator-trust `spec/trust.md`).
 
 ### 11.5 Permissions, batching and yolo *(decided in direction 2026-09-25; defined in curator-trust)*
 
 Asking the person about every change is safe and tiring. The main loop asks the way a phone asks for a permission; curator-trust `spec/trust.md` defines the rules, and this section says what the person sees.
 
-- **Grants per kind of change.** A hive asks once, for example: "The café wants to create tasks on a schedule: always / once / no". Kinds a grant may cover, each with its limits:
+- **Grants per kind of change.** A hive asks once, for example: "The café wants to create tasks on a schedule: always / once / no". The person may also answer before the hive asks: `keeper grant <hive> <kind>`. Kinds a grant may cover, each with its limits:
   - schedules, with how often and how many tasks a firing may create;
   - new fields that no guard reads;
   - estimates, helpers, work-in-progress limits on agent-owned steps, model preferences, descriptions;
@@ -636,8 +681,8 @@ Asking the person about every change is safe and tiring. The main loop asks the 
   - installing audited skills.
 - **Never a grant.** People and approvers, thresholds, money, human-owned steps, delegations, data and signature policy always need a touch.
 - **Structure changes batch.** A change to a process's steps and transitions waits for one touch, and one touch covers every pending change: a week of the designer's improvements is one touch, with the change analyst's explanation of what each change does.
-- **Grants stay visible.** The person revokes a grant at once; it is a narrowing. Grants come up for review monthly, and a grant the person keeps confirming is sealed and no longer asked about until it is revoked.
-- **Yolo.** One touch switches a hive, or the whole apiary, into yolo mode, optionally for a period (`--yolo 24h`):
+- **Grants stay visible.** The person revokes a grant at once with `keeper revoke`; it is a narrowing. Grants come up for review monthly in `keeper review`, and a grant the person keeps confirming is sealed and no longer asked about until it is revoked.
+- **Yolo.** One touch switches a hive, or the whole apiary, into yolo mode, optionally for a period: `keeper grant <hive>|--all yolo [--for 24h]`. Yolo is a capability kind like any other, so `keeper revoke` ends it:
   - every process change then applies without a touch;
   - `keeper status` and every conversation show a loud banner while it lasts;
   - it is refused on a board shared by several operators, and together with delegations that spend money;
@@ -655,16 +700,16 @@ A system role in the main loop's own process. It holds no secret itself (princip
     - `main`: the root, with `keeper.toml`, the persona, the memory and the main loop's board;
     - `hive/<name>` branches: each process's full history, since git keeps unrelated histories side by side in one repository;
     - `mirror/`: every installed package at its exact commit;
-    - `curator/`: the node's profile and overlay declarations with their pins (curator-spec issue #93).
+    - `curator/`: the node's profile and overlay declarations with their pins, from `curator profile export` (curator-spec issue #93).
   - Processes keep their own working repositories, and the registry may still record each one's own remote (§5.2); the backup repository mirrors them.
-  - It pushes on a schedule and after confirmed changes.
+  - It pushes on a schedule and after confirmed changes. `keeper backup status` shows the last push and what is pending; `keeper backup now` pushes at once.
   - It never backs up secrets, harness credentials or the session host's runtime state.
 - **Secrets stay out of git.** Tokens live in the node's keychain (the platform's secret store). The companion app keeps an encrypted mirror in its own secure storage, for example the iCloud Keychain on Apple platforms. The sysadmin's runs never see a token: a credential helper reads it from the keychain inside the trusted executor that pushes.
 - **Restore is the from-zero flow with a different root.**
-  1. The installer installs Curator.
+  1. The installer installs Curator with its first-party providers (§6.2).
   2. `keeper restore <remote>` clones the root from the backup repository and the processes from their `hive/<name>` branches.
-  3. Curator imports the profile declarations with every source re-pointed to the mirror, by `--directory` and an exact revision (curator-spec issues #92, #93). Every version matches the backup, and nothing is fetched from the original upstreams. Audit records still match, because a record matches an artifact by its content hash (Curator registry protocol §3).
-  4. The companion app pairs with the new node (§11.3).
+  3. `curator profile restore curator/profiles.json --source-map <upstream>=<mirror>` re-creates the profile declarations with every source re-pointed to the mirror, by `--directory` and an exact revision (curator-spec issues #92, #93). Every version matches the backup, and nothing is fetched from the original upstreams. Audit records still match, because a record matches an artifact by its content hash (Curator registry protocol §3).
+  4. The companion app pairs with the new node (`keeper device pair`, §11.3).
   5. Over the paired end-to-end channel, and after the person confirms on the app, the app transfers the tokens into the node's keychain.
   6. The app also hands Curator the **trusted-skills list**: each skill's package identity and its audit certificate as recorded at backup time. Curator verifies the signatures, not the audit again: it trusts a skill whose audit record verifies against a trusted key — our registry's, the person's own registry's, or the person's key on the phone (Curator registry protocol §2–§4).
   7. `keeper up`.
@@ -708,13 +753,13 @@ Later layers add; they never remove a locked module. Curator already composes th
 
 - **What Curator already does.** It installs a profile from a git source by tag, range or revision, from a directory of the repository, resolves the skills the profile's own `Skillfile.json` requires, locks them, and composes machine overlays with weights (curator-spec Decision 0010; `protocol/environments.md` §1, §6, §9.1).
 - **So a package ships profiles as data.** A process package ships a context package for each role's sessions under `profiles/`; the keeper package ships `apiary` and the system roles' profiles (§6.2). A process's registry entry names the profile its queen launches with.
-- **What is still needed from Curator:** the short form and default directories (curator-spec issue #92), and export and import of the declarations for backup (#93). Nothing else.
+- **What is still needed from Curator for profiles:** the short form and default directories (curator-spec issue #92), and `profile export` and `profile restore` of the declarations for backup (#93). Nothing else. The `keeper` command and Curator's providers reach the node by other routes: a command-only install (#95) and provider installs (#100) (§6.2).
 
 ### 13.4 The memory skill and its resolution ladder
 
 A plug-and-play skill, installed with the main loop's profile (§6.2) and with every queen's.
 
-- **Commands.** `memory add`, `memory search`, `memory expand <id>`, `memory forget`, `memory review`, and `memory approve` when write approval is on; all take `--json` for agents. Only these commands write memory; the main loop and the queens use them, and the person may too.
+- **Commands.** `add`, `search`, `expand <id>`, `forget`, `review`, and `approve` when write approval is on; all take `--json` for agents. They belong to the memory package's own command, named with the package's prefix, because a bare `memory` would claim a global command name for one package; `keeper memory …` fronts it for the person and the main loop (§7.2). Only these commands write memory; the main loop and the queens use them, and the person may too. *decided 2026-09-27; the prefix is the package's*
 - **Backends.** Files in git by default; SQLite; an external memory service. The backend is configuration; the commands stay the same.
 - **Provenance.** Every note records who wrote it, when, and where the fact came from: the person's own words, a board record, an external message.
 - **A daily write budget.** Each session may spend a number of tokens a day on notes. The budget is soft, and it makes the agent choose what is worth keeping.
@@ -729,7 +774,7 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
   | 3 | week and month summaries | days, or weeks |
   | fact cards | bounded cards of facts about the person, the work and the environment | the day or session each fact came from |
 
-  - **Identifiers.** Every summary line and every fact carries an identifier, for example `D2026-09-24#3` for the third line of that day's summary. `memory expand <id>` returns the level below it — the day's sessions, a session's transcript range — and `memory search` searches every level.
+  - **Identifiers.** Every summary line and every fact carries an identifier, for example `D2026-09-24#3` for the third line of that day's summary. `keeper memory expand <id>` returns the level below it — the day's sessions, a session's transcript range — and `keeper memory search` searches every level.
   - **What a session starts with.** The profile's memory overlay carries the fact cards and a ladder: today by session, this week by day, this month by week. It is injected as a snapshot at session start and stays fixed for the session, which keeps the prompt cache warm; it is refreshed at the next start or park.
   - **Capacity forces consolidation.** Fact cards and each summary level have a size bound. A write that would exceed it is refused with an error, never dropped silently, so the agent consolidates or forgets before it retries.
   - **Writes.** The daily token budget below, optional write approval (the person approves pending writes at the next review), and quarantine for facts derived from external input.
@@ -737,12 +782,12 @@ A plug-and-play skill, installed with the main loop's profile (§6.2) and with e
 - **No authority.** Notes never grant anything: authority lives only in a process's confirmed configuration and in the operator's confirmed files.
 - **Where the data lives.** The main loop's notes and the system roles' in `~/apiary/memory/`; a queen's in its process repository's `memory/`. Both are backed up with their repositories (§12.1), and a restore brings them back with the resolve and the backup's data.
 - **Tampering.** While every agent runs as the operator's operating-system user, any agent can edit the files directly. The provenance and the reviews make that visible; they do not prevent it. The real protection is separation at the operating-system level: agents under an account of their own, and the notes owned by the operator's account and written only through the skill's broker (curator-trust).
-- **Review.** `memory review` joins the monthly review of standing answers and grants (§11.4, §11.5): the person keeps, edits or drops notes.
+- **Review.** The memory review joins the monthly review of standing answers and grants in `keeper review` (§11.4, §11.5): the person keeps, edits or drops notes.
 
 ### 13.5 Role profiles instead of project folders *(decided 2026-09-25)*
 
 - Every run launches with its role's Curator profile, so a role's skills live in that profile's managed home and are never materialized into a project folder such as `.claude/skills`. An orchestrator's session, or a harness someone starts by hand in the project folder, does not see them.
-- This fits the exit from agents-infra: the launch-profiles design already chooses a context profile per role (`spawn.context_profile`), and task-board consumes Curator fragments for its child runs (curator-spec Decision 0019).
+- This fits the exit from agents-infra: the launch-profiles design already chooses a Curator profile per role (`spawn --profile`, and `spawn.profile` in the project's configuration, formerly `spawn.context_profile`), and task-board consumes Curator fragments for its child runs (curator-spec Decision 0019).
 - On-demand skills are withdrawn: curator-spec issue #91 and curator issue #91 were closed on 2026-09-25, and curator-playbook §8.1 now delivers role skills through per-role profiles.
 
 ### 13.6 Dreams: the nightly cycle and dream memory *(proposed, 2026-09-25)*
@@ -764,7 +809,7 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
     - **AC power;**
     - **within the per-night budget.**
   - **The main loop schedules the dreams** of every process on the node within the node's capacity: the operator's machine capacity (`~/.curator/runtimes.toml`), the provider-limit state and the engines available. It never dreams two processes on one quota when one would exhaust it.
-  - **Approval once.** A process dreams only under a capability grant of the kind `dreams`, asked once per process (curator-trust §16). A dream cycle then needs no touch: nothing in a dream carries authority, and each proposal it produces takes the ordinary batched confirmation.
+  - **Approval once.** A process dreams only under a capability grant of the kind `dreams`, asked once per process (curator-trust §16), or given ahead with `keeper grant <hive> dreams`. A dream cycle then needs no touch: nothing in a dream carries authority, and each proposal it produces takes the ordinary batched confirmation.
   - **The sequence:**
     1. The session host asks the orchestrator to park, and the orchestrator writes its park note (session-host specification).
     2. The host stops the session.
@@ -785,14 +830,14 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 
 | Needs | From | Status |
 | --- | --- | --- |
-| start a hosted session in a directory, detached, with a profile and a goal; attach in control or read-only mode, for `keeper chat` and `keeper watch`; park, stop and the emergency stop; doorbells into detached sessions; a session registry for the picker; per-session capability tokens; session events and telemetry for the watchdog | the session host (its own specification; `ax` later) | extracting today's daemon comes first (the operator's priority, 2026-09-24); closing access to the host is the first refactor after it (decided 2026-09-25); the rest is new |
-| `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; export and import of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; command-only installs, so `keeper` is on the person's `PATH` while the role stays in its profile | Curator (Decisions 0004, 0005, 0010, 0016, 0019, 0021; curator-spec issues #92, #93, #94, #95; curator issue #87; #91 closed) | profiles and overlays exist; the decisions are proposed; the issues are open |
+| start a hosted session in a directory, detached, with a profile and a goal; attach in control or read-only mode, for `keeper chat` and `keeper watch`; park, stop and the emergency stop; doorbells into detached sessions; a session registry for the picker; per-session capability tokens; session events and telemetry for the watchdog; its command line `curator session …` | the session host (its own specification; `ax` later) | extracting today's daemon comes first (the operator's priority, 2026-09-24); closing access to the host is the first refactor after it (decided 2026-09-25); the rest is new |
+| `curator run` as the one entry point; environment profiles installed from a package directory, with machine overlays; source shorthands and default directories; `profile export` and `profile restore` of profile declarations; the attestation fast path and a signed bootstrap; commands built from source with the system's Go when it fits; the registry of audited skills; template packages instantiated without an upstream; command-only installs (`global add … --commands-only`), so `keeper` is on the person's `PATH` while the role stays in its profile; provider installs (`curator provider install|check`) and first-party providers beside `curator`, since `keeper up` needs `curator-run`; the operator-file commands `curator models` and `curator runtimes` | Curator (Decisions 0004, 0005, 0010, 0016, 0019, 0021; curator-spec issues #92, #93, #94, #95, #100; curator issues #87, #96; #91 closed) | profiles and overlays exist; the decisions are proposed; the issues are open |
 | messages, doorbell, local and NATS carriers, leases, messenger providers, a companion-app signer provider | waggle (CM1, CM2, providers; Amendment A1) | CM1 is next; A1 is written |
 | processes, hand-off, delegation semantics, skill policy, template parameters, dream mode | curator-playbook | DRAFT v4.3 (the core) |
 | who counts as a person, confirmations and their batching, capability grants, yolo, the companion app and pairing, secrets, separation at the operating-system level | relux-works/curator-trust `spec/trust.md` | DRAFT |
-| the memory skill | its own package, installed with the profiles | proposed (§13.4) |
-| local engines and models for the first run | curator-inference-manager | specified |
-| the board | task-board | exists |
+| the memory skill and its package-prefixed command | its own package, installed with the profiles | proposed (§13.4) |
+| local engines and models for the first run, through `curator engines` | curator-inference-manager | specified |
+| the board; the kernel commands keeper calls: `trust …`, `config status`, `mail …`, `board snapshot`, the directive kind `park` | task-board | the board exists; the commands are planned (curator-playbook, curator-trust, waggle, the session-host specification) |
 | hardware requirements and download sizes for local models | the model registry (agents-management) or the Curator registry | open |
 | a user-level login agent | the node's operating system (launchd, systemd) | exists |
 | the companion app | its own track | not started |
@@ -804,10 +849,10 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 | Step | Delivers |
 | --- | --- |
 | KP0 | this draft, its diagrams, a refuter run |
-| KP1 | one node on existing harnesses: the detached root and the keeper package's profiles; the `keeper` command — `keeper` itself, `up`, `down`, `ls`, `chat` and its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive`, `route`, `create`, `wake`, the first ones wrapping today's `task-board session` commands; the login agent; the registry; supervision through the extracted session host with capability tokens; routing with a generative fallback and hints; creating a process from a template; the main loop's own process |
-| KP2 | channels through waggle providers; the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen, and approvals, grants and batched confirmations through it (on the app's own track) |
-| KP3 | the designer's generation and improvement proposals, with dream rehearsals and the nightly dream cycle once curator-playbook dream mode ships; the librarian; skill discovery and installation; the memory skill with its resolution ladder, files backend first |
-| KP4 | the sysadmin: backup, restore, the token inventory, the trusted-skills list, skill updates; the watchdog |
+| KP1 | one node on existing harnesses: the detached root and the keeper package's profiles, with the providers `curator-run` and `curator-session`; the `keeper` command — `keeper` itself, `init`, `up`, `down`, `session list` (`ls`), `chat` and its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive` (with `add --template`), `hint`, `route`, `ask`, `wake`, `host` — over `curator session` and `curator run`, and over today's `task-board session` commands until the node host lands; the login agent; the registry; supervision through the extracted session host with capability tokens; routing with a generative fallback and hints; creating a process from a template; the main loop's own process |
+| KP2 | channels through waggle providers (`keeper channel`); the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen (`keeper device`), and approvals, grants and batched confirmations through it (on the app's own track) and at the terminal (`keeper inbox`, `approve`, `reject`, `confirm`, `grant`, `revoke`) |
+| KP3 | the designer's generation and improvement proposals, with dream rehearsals and the nightly dream cycle once curator-playbook dream mode ships; the librarian; skill discovery and installation; the memory skill with its resolution ladder, files backend first, and `keeper memory`; `keeper review` |
+| KP4 | the sysadmin: backup (`keeper backup`), restore (`keeper restore`), the token inventory, the trusted-skills list, skill updates; the watchdog |
 | KP5 | several nodes: joined processes, a head main loop, several operators |
 
 ### 15.2 Open questions
@@ -838,6 +883,9 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 24. **The memory ladder:** the size bounds of each level and of the fact cards, when day, week and month summaries are written (at the first session of the next period, or on a schedule of the main loop's process), and the identifier format (§13.4).
 25. **Dream rehearsals:** which requests the designer rehearses by default, how long a rehearsal may run, and how its report is shown in the confirmation request (§9.2; curator-playbook §17.3 item 19).
 26. **The nightly cycle and dream memory:** the defaults of `policy.dreams` and how the main loop orders processes that compete for one night's capacity (the form is proposed in §13.6); the log distiller's rules and output format, and how its identifiers map onto level 0; how dream-memory insights are grouped for review and how long rejected ones are remembered (§13.6).
+27. **`keeper ask`:** how the answer reaches a script when the request needs a person or takes long — exit codes, `--json`, a timeout, a later `keeper inbox` entry (§7.2).
+28. **The memory package's command name:** its package prefix, and whether `keeper memory` stays a pure front or the main loop's library calls the package directly (§13.4).
+29. **A harness per hive:** `[bindings]` in `models.toml` has no per-project key, so two hives of one playbook share their root role's binding; whether bindings gain a `projects` scope, as standing answers have (curator-playbook §2.3), or keeper keeps a per-hive preference in the operator files (§7.4).
 
 ## 16. Change log: v0 → v0.1
 
@@ -907,3 +955,22 @@ Applied from the operator's answers of 2026-09-25 to v0.3:
 | The main loop schedules dreams across processes within the node's capacity; approval once per process through the capability kind `dreams` | §13.6 |
 | The dream sequence: park, stop, a dream session with the role's dream profile on the sandbox, consolidation, insights and reports, then resume or stay parked; a real high-priority doorbell wakes the dreamer | §13.6 |
 | Open question 26 narrowed to the policy defaults and to ordering processes that compete for one night's capacity | §15.2 |
+
+## 20. Change log: v0.4 → v0.5
+
+Applied from the operator's adoption, on 2026-09-27, of the command-line shape in wiki `research/cli-shaping-review.md`:
+
+| Change | Where |
+| --- | --- |
+| Beekeeping words appear only in `keeper`'s nouns, the apiary's directories and the profile name `apiary`; every kernel command, flag, configuration key and provider uses the technical terms | Names |
+| Three front doors: `keeper` for the person, `curator` with its `curator-<noun>` providers for the machine, `task-board` as the kernel; keeper wraps the other two | §0, §2, §7.2 |
+| The keeper command map, with a column naming what each command calls: `init`, `restore`, `up`, `down`, `status`, `chat`, `watch`, `wake`, `park`, `stop`, `estop [<hive>]`, `route [--dry-run]`, `ask`, `inbox`, `approve`, `reject`, `confirm`, `grant`, `revoke`, `review`, `session list` (alias `ls`), `hive list\|show\|add\|remove\|set`, `hint`, `channel`, `device`, `harness list\|set` (alias `harness default`), `memory`, `backup`, `host`; `keeper create` folds into `hive add --template\|--design\|--path\|--clone`, and `hive move` into `hive set` | §5.4, §7.2 |
+| The default harness is the operator's `@orchestrator` binding in `~/.curator/models.toml`, not a key of the committed `keeper.toml`; a hive's harness is the operator's binding for its root role; runtime ids everywhere | §5.1, §5.2, §5.4, §6.4, §7.4 |
+| Curator's providers are installed by `keeper init` (`curator provider install`, curator-spec #100, curator #96), because no profile can carry them; the command-only install is `curator global add … --commands-only` (#95); the declarations are exported and restored with `profile export` and `profile restore` (#93) | §6.2, §6.4, §7.3, §12.1, §13.3, §14 |
+| `keeper init` spelled as its steps: the role profiles, the providers, `task-board init`, `task-board trust init`, the first commit, pairing and the login agent | §6.4 |
+| `keeper up` runs `curator run <runtime> --profile <role profile>` for each hive | §7.3 |
+| Session commands wrap the session host's `curator session …`; `task-board session` stays an alias for one release after the node host lands | §2, §7.2, §7.5, §10.2 |
+| One emergency stop, `keeper estop [<hive>]`, over `curator session estop` and the kernel's `task-board board snapshot`; runs park by the directive kind `park` | §10.3, §10.5 |
+| The person's decisions at the terminal: `keeper inbox`, `approve\|reject`, `confirm`, `grant\|revoke` (yolo and dreams are kinds), `review` and `device`, over `task-board trust …` | §11.1–§11.5, §13.6 |
+| The memory package's command takes its package's prefix, with `keeper memory` in front; the validator is `curator playbook check`; the per-role Curator profile is `spawn --profile` and `spawn.profile` | §6.2, §9.2, §13.4, §13.5 |
+| New open questions 27–29 | §15.2 |

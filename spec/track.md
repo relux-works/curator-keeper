@@ -1,6 +1,6 @@
 # Track: main loop
 
-Status: **DRAFT v0.4**, 2026-09-25. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
+Status: **DRAFT v0.5**, 2026-09-27. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
 
 ## Why
 
@@ -11,7 +11,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
 | # | Delivers | Done when |
 | --- | --- | --- |
 | KP0 | draft specification, diagrams, a refuter run | merged as a draft; every refuter finding resolved or listed as open |
-| KP1 | one node on existing harnesses: the root instantiated from the template package with no upstream; the keeper package's `apiary` profile as the one install; the `keeper` command (`keeper` itself, `up`, `down`, `ls`, `chat` with its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive`, `route`, `create`, `wake`; the first ones wrap today's `task-board session` commands); the login agent running `keeper up`; supervision through the extracted session host with capability tokens; routing with a generative fallback and routing hints; creating a process from a template; the main loop's own process on its own board | on one machine, a request typed in the terminal reaches the right one of three processes; a request for a missing process creates it from a template after the person confirms; after a reboot, `keeper up` brings back the main loop and every queen with their goals |
+| KP1 | one node on existing harnesses: the root instantiated from the template package with no upstream; the keeper package's `apiary` profile as the one install, with the Curator providers `curator-run` and `curator-session` installed by `keeper init`; the `keeper` command (`keeper` itself, `init`, `up`, `down`, `session list` with its alias `ls`, `chat` with its picker, `watch`, `park`, `stop`, `estop`, `status`, `harness`, `hive` with `add --template`, `hint`, `route`, `ask`, `wake`, `host`) over `curator session` and `curator run`, and over today's `task-board session` commands until the node host lands; the login agent running `keeper up`; supervision through the extracted session host with capability tokens; routing with a generative fallback and routing hints; creating a process from a template; the main loop's own process on its own board | on one machine, a request typed in the terminal reaches the right one of three processes; a request for a missing process creates it from a template after the person confirms; after a reboot, `keeper up` brings back the main loop and every queen with their goals |
 | KP2 | channels through waggle providers; the app's download link and the pairing QR code in the terminal; pairing with the companion app, with and without a screen, and approvals, grants and batched confirmations through it (on the app's own track) | a request written in a messenger is answered there, and an approval is signed on the phone; a headless node pairs without a screen |
 | KP3 | the designer's generation and improvement proposals; the librarian on a schedule; skill discovery and installation from the Curator registry; the memory skill with its resolution ladder (fact cards, session, day, week and month summaries with identifiers, `memory expand`), files backend first; the designer's dream rehearsals and the nightly dream cycle (log distiller, replay, consolidation, dream memory) once curator-playbook dream mode ships | a request no template fits yields a validated new process; two near-duplicate playbooks yield a merge proposal that the person approves |
 | KP4 | the sysadmin (backup to the person's own remotes, restore, the token inventory, the trusted-skills list, skill updates) and the watchdog (context, compaction, provider limits) | a node restored from its backup on a new machine runs the same processes with the same skill versions after the person confirms the secrets transfer on the app; a session about to compact writes its hand-off first |
@@ -23,21 +23,24 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Extract today's session daemon as a module first, unchanged (the operator's priority, 2026-09-24).
   - Then add what the main loop needs:
     - start a hosted session detached in any directory;
-    - a session registry for `keeper ls` and the `keeper chat` picker; attach in control mode (`keeper chat`) or read-only (`keeper watch`);
-    - park, stop and the emergency stop;
+    - a session registry for `keeper session list` and the `keeper chat` picker; attach in control mode (`keeper chat`) or read-only (`keeper watch`);
+    - park, stop and the emergency stop, with `task-board board snapshot` and the run directive `park` in the kernel;
+    - its command line as the Curator provider `curator session …`, which keeper fronts;
     - per-session capability tokens that enforce who may act on which session;
     - deliver doorbells into sessions nobody is attached to;
     - telemetry for the watchdog: context usage, compaction signals, token events.
 - **Curator.**
   - `curator run` as the one entry point (Decision 0021).
   - Environment profiles installed from a package directory, with machine overlays (Decision 0010): the `apiary` profile and the system roles' profiles are the install unit (specification §6.2, §13.3).
-  - Source shorthands and default directories (curator-spec issue #92); export and import of profile declarations (#93); the attestation fast path and a signed bootstrap (#94).
+  - Source shorthands and default directories (curator-spec issue #92); `profile export` and `profile restore` of profile declarations (#93); the attestation fast path and a signed bootstrap (#94); command-only installs, `curator global add … --commands-only` (#95).
+  - Provider installs: first-party providers beside `curator` and `curator provider install|check` for the rest, since a profile cannot carry `curator-run` (curator-spec issue #100, curator issue #96).
+  - The operator-file commands `curator models` and `curator runtimes`, which hold the default harness as an `@orchestrator` binding.
   - On-demand skills (curator-spec issue #91), possibly unnecessary with role profiles (specification §13.5).
   - Template packages instantiated without an upstream.
   - Commands built from source with the system's Go when it fits, never overriding it (curator issue #87); signed binaries later.
   - The registry of audited skills.
 - **waggle.**
-  - The local carrier, the doorbell and `task-board mail` (CM1).
+  - The local carrier, the doorbell and `task-board mail` (CM1), whose `approve` and `reject` back `keeper approve|reject`.
   - NATS and leases across machines (CM2).
   - Messenger providers.
   - Amendment A1 (board acts, hand-off results, delegation).
@@ -45,7 +48,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
 - **curator-playbook.**
   - Processes, hand-off, delegation semantics, skill policy, template parameters (DRAFT v4.3, the core).
 - **curator-trust.**
-  - Who counts as a person, confirmations and their batching, capability grants, yolo, standing answers under review, the companion app and pairing, secrets, separation at the operating-system level (relux-works/curator-trust `spec/trust.md`).
+  - Who counts as a person, confirmations and their batching, capability grants, yolo, standing answers under review, the companion app and pairing, secrets, separation at the operating-system level (relux-works/curator-trust `spec/trust.md`), through the kernel's `task-board trust …`, which `keeper confirm|grant|revoke|device` front.
 - **curator-inference-manager.**
   - The first-run local model, with download sizes the installer can state.
 - **The operating system.**

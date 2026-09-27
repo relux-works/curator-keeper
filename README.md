@@ -4,7 +4,7 @@ The main loop of an agent system: the keeper of an apiary. On one machine it kee
 
 ## Status
 
-**Draft design, v0.4.** Nothing is implemented. The specification is a draft (milestone KP0). The beekeeping names were approved on 2026-09-25 (spec, Names): apiary, yard, keeper, hive, queen, comb, bee, wild bees, nuc. v0.3 adds the memory resolution ladder, the designer's dream rehearsals and the command-only install of `keeper`, and records role profiles as decided.
+**Draft design, v0.5.** Nothing is implemented. The specification is a draft (milestone KP0). The beekeeping names were approved on 2026-09-25 (spec, Names): apiary, yard, keeper, hive, queen, comb, bee, wild bees, nuc. v0.3 adds the memory resolution ladder, the designer's dream rehearsals and the command-only install of `keeper`, and records role profiles as decided. v0.5 applies the command-line shape adopted on 2026-09-27: beekeeping words only in `keeper`'s nouns and the apiary's directories, the full `keeper` command map over `curator session`, `curator run` and `task-board trust`, and the default harness as an operator binding.
 
 ## Layout
 
@@ -17,7 +17,7 @@ The main loop of an agent system: the keeper of an apiary. On one machine it kee
 ## How it fits
 
 - **Processes** are configured by curator-playbook (`Playbook.json` per project). The main loop starts exactly one root orchestrator per process and never does process work itself.
-- **Sessions** are started, kept alive and woken by the session-host module, which is being extracted from task-board's session daemon.
+- **Sessions** are started, kept alive and woken by the session-host module, which is being extracted from task-board's session daemon; its command line is `curator session …`, and `keeper` fronts it.
 - **Messages** between the main loop and orchestrators are waggle messages: a doorbell, then a pull.
 - **People** talk through channels and approve through a companion app or the machine's user authentication.
 
