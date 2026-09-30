@@ -732,7 +732,11 @@ A system role in the main loop's own process, with a small deterministic core.
   - it reports anomalies to the main loop: a session that stopped moving, a context that fills unusually fast.
 - **It never moves work.** It parks and reports; the orchestrators decide.
 
-## 13. Memory, persona, overlays and profiles *(proposed)*
+### 12.3 Observability agents and worker pools *(idea, from the operators' call of 2026-09-29; not planned)*
+
+Every machine deployed at work comes with an agent connected to the chat: alerts land in the chat; an orchestrator reacts, asks what is happening and offers help; it escalates to the tech leads; it lends workers from a pool to the sysadmins, with the rights to drive them. This is the same main loop with a sysadmin or observability playbook, extending the sysadmin (§12.1) and the watchdog (§12.2). Pools are already used informally between orchestrators; when pool allocation is formalized, it should be a lease with an owner and an expiry, not an agreement in chat prose.
+
+<!-- TODO(tb-keeper): source: relux-works/wiki research/call-digest-2026-09-29-evening.md §3 "Observability agents and worker pools" (status: idea; it points at §12.1 and §12.2). Open: whether an idea belongs in this specification at all, or only in §15.2 or the wiki; the marker; whether the lease remark stays. -->
 
 ### 13.1 Kinds of memory
 
