@@ -45,7 +45,7 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Amendment A1 (board acts, hand-off results, delegation).
   - A companion-app signer provider.
 - **curator-playbook.**
-  - Processes, hand-off, delegation semantics, skill policy, template parameters (DRAFT v4.4, the core; v4.4 renames its commands to the adopted command-line shape).
+  - Processes, hand-off, delegation semantics, skill policy, template parameters (DRAFT v4.8, the core; v4.4 renamed its commands to the adopted command-line shape).
 - **curator-trust.**
   - Who counts as a person, confirmations and their batching, capability grants, yolo, standing answers under review, the companion app and pairing, secrets, separation at the operating-system level (relux-works/curator-trust `spec/trust.md`), through the kernel's `task-board trust …`, which `keeper confirm|grant|revoke|device` front.
 - **curator-inference-manager.**
