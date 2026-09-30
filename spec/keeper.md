@@ -686,7 +686,7 @@ Asking the person about every change is safe and tiring. The main loop asks the 
 - **Yolo.** One touch switches a hive, or the whole apiary, into yolo mode, optionally for a period: `keeper grant <hive>|--all yolo [--for 24h]`. Yolo is a capability kind like any other, so `keeper revoke` ends it:
   - every process change then applies without a touch;
   - `keeper status` and every conversation show a loud banner while it lasts;
-  - it is refused on a board shared by several operators, and together with delegations that spend money;
+  - it is refused on a board shared by several operators, on more than one machine, or on any board from L1, and together with delegations that spend money;
   - the emergency stop and the immediate narrowings always work.
 
 ## 12. System roles
