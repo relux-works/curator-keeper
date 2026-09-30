@@ -429,7 +429,7 @@ A session starts through five layers, each with one job:
 4. **The session host** receives the plan and hosts the process (Decision 0021, through the `ax start --launch-plan` contract; task-board's session daemon bridges it today). It binds the session to the process's primary goal and injects the goal, with the park note if there is one.
 5. **The harness** runs in the hive's directory with its managed home, detached, until someone attaches.
 
-`keeper up` for a hive runs `curator run <runtime> --profile <role profile>` in the hive's directory: layers 1–5, with the runtime chosen by §7.4 and the role profile the hive's registry entry names (§13.3).
+`keeper up` for a hive runs `curator run <runtime> --profile <role profile>` in the hive's directory: layers 1–5, with the runtime chosen by §7.4 and the role profile resolved like the harness: the operator's binding for the hive's root role, `[bindings.<role>] profile` in `~/.curator/models.toml`, then the `@orchestrator` binding; `--profile` overrides it for one run, as `spawn --profile` does for a child. *decided 2026-09-28* TODO(tb-keeper): confirm `@orchestrator` as the profile fallback (every queen would share one profile), and whether `keeper up` gains a `--profile` flag in the §7.2 table. The registry names no profile: which profile a package ships for a role is open item 19 and curator-playbook §17.3 item 16 (§13.3).
 
 ### 7.4 Which harness *(proposed; the operator's direction, 2026-09-25; where it is recorded, decided 2026-09-27)*
 
@@ -754,7 +754,7 @@ Later layers add; they never remove a locked module. Curator already composes th
 ### 13.3 Profiles are the install unit
 
 - **What Curator already does.** It installs a profile from a git source by tag, range or revision, from a directory of the repository, resolves the skills the profile's own `Skillfile.json` requires, locks them, and composes machine overlays with weights (curator-spec Decision 0010; `protocol/environments.md` §1, §6, §9.1).
-- **So a package ships profiles as data.** A process package ships a context package for each role's sessions under `profiles/`; the keeper package ships `apiary` and the system roles' profiles (§6.2). A process's registry entry names the profile its queen launches with.
+- **So a package ships profiles as data.** A process package ships a context package for each role's sessions under `profiles/`; the keeper package ships `apiary` and the system roles' profiles (§6.2). Which of them a queen launches with is the operator's binding of its root role, `[bindings.<role>] profile` in `~/.curator/models.toml`, with `--profile` as the one-run override (§7.3); the registry names no profile. Which profile a package ships for a role is open item 19 and curator-playbook §17.3 item 16.
 - **What is still needed from Curator for profiles:** the short form and default directories (curator-spec issue #92), and `profile export` and `profile restore` of the declarations for backup (#93). Nothing else. The `keeper` command and Curator's providers reach the node by other routes: a command-only install (#95) and provider installs (#100) (§6.2).
 
 ### 13.4 The memory skill and its resolution ladder
