@@ -55,7 +55,7 @@ Related documents:
 - **The main loop and orchestrators talk over waggle.** A request goes in as a message, the session host rings the doorbell, and the orchestrator pulls the message; reports come back the same way. Child runs never talk to the main loop. *proposed*
 - **A registry points at separate repositories.** The main loop keeps a **process registry**, `keeper.toml`, in its own **root directory**. Processes are separate repositories the registry points at, never git submodules. Adding, removing or moving a process is authority-bearing and takes effect after a person confirms it. *proposed*
 - **Installation is detached from us, and fast.** The root is instantiated from a pinned, audited template package and becomes the person's own repository with no upstream to us. Our code reaches a node only through the Curator registry, audited and pinned. The installer uses the system's git and Go when they fit and never installs the full Xcode; a signed bootstrap and signed registry attestations replace a long local audit. *decided (2026-09-25)*
-- **One install brings everything.** The keeper package's `apiary` profile is the install unit: one `curator profile install relux-works/curator-playbook-keeper` brings the main loop's skill, the board tool, session-host tooling and the memory skill. `keeper init` then adds the system roles' profiles and the Curator providers the node needs, which no profile can carry (§6.2). One tool serves many boards. *proposed; the operator's direction (2026-09-25)*
+- **One install brings everything.** The keeper package's `apiary` profile is the install unit: one `curator profile install relux-works/curator-playbook-keeper` brings the main loop's skill, the board tool and the memory skill. `keeper init` then adds the system roles' profiles and the Curator providers the node needs, which no profile can carry (§6.2). One tool serves many boards. *proposed; the operator's direction (2026-09-25)*
 - **`keeper` opens the conversation.** With no arguments it opens the conversation with the main loop, running `keeper up` first when the apiary is down. `keeper chat <hive>` talks with a hive's queen; `keeper watch <target>` only looks. *proposed; the operator's direction (2026-09-25)*
 - **`keeper up` is the single entry point.** It brings a node up — at login, after a reboot, or by hand — and resumes every hive from its goal and park note. `keeper down` parks everything; `keeper estop` stops everything at once. *proposed*
 - **Routing** follows a fixed order *(decided 2026-09-24)*:
@@ -287,7 +287,6 @@ curator profile install relux-works/curator-playbook-keeper
 | --- | --- | --- |
 | the keeper skill | `full` | the main loop's role, its process template and the `keeper` command |
 | task-board | `runtime`, narrowed to the `task-board` command | the board tool: the kernel, spawns, the session daemon today |
-| session-host tooling | `runtime`, narrowed to its commands | the session host, until it ships inside task-board's successor |
 | the memory skill | `runtime`, narrowed to the memory package's command | notes with provenance (§13.4) |
 | waggle tooling | `runtime`, once waggle CM1 ships | mail, doorbell, providers |
 
