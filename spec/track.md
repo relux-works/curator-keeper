@@ -35,7 +35,6 @@ The process configuration (curator-playbook) lets one project describe how it wo
   - Source shorthands and default directories (curator-spec issue #92); `profile export` and `profile restore` of profile declarations (#93); the attestation fast path and a signed bootstrap (#94); command-only installs, `curator global add … --commands-only` (#95).
   - Provider installs: first-party providers beside `curator` and `curator provider install|check` for the rest, since a profile cannot carry `curator-run` (curator-spec issue #100, curator issue #96).
   - The operator-file commands `curator models` and `curator runtimes`, which hold the default harness as an `@orchestrator` binding.
-  - On-demand skills (curator-spec issue #91), possibly unnecessary with role profiles (specification §13.5).
   - Template packages instantiated without an upstream.
   - Commands built from source with the system's Go when it fits, never overriding it (curator issue #87); signed binaries later.
   - The registry of audited skills.
