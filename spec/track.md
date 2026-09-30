@@ -1,6 +1,6 @@
 # Track: main loop
 
-Status: **DRAFT v0.5.1**, 2026-09-28. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
+Status: **DRAFT v0.5.1**, 2026-09-30. Specification: [`keeper.md`](keeper.md). Roadmap: `wiki/roadmap/ecosystem-roadmap.md`, line KP. Names: the keeper of an apiary (specification, Names).
 
 ## Why
 
