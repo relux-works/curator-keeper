@@ -847,9 +847,7 @@ A dream (curator-playbook §6.13) is a rehearsal in which every tool runs with `
 
 ### 15.1 Integration plan *(proposed; KP1 terminal-only decided 2026-09-28)*
 
-KP1 is terminal-only: no channel and no tick. Channels come in KP2, and the tick with its user timer comes from curator-playbook PC3. The tick is called every minute by a user-level system timer, a launchd agent or a systemd user timer, and the main loop takes it over later *(decided 2026-09-24)*.
-
-<!-- TODO(tb-keeper): source: relux-works/wiki decisions.md, "2026-09-24, process configuration: decisions on draft v2.1", *tick*; curator-playbook core §6.9 carries the same rule. Not decided: which step takes the timer over (KP2 with the channels, or later), and whether the main loop replaces the timer or keeps calling tick from its own schedule. Placement: here, §7.2 or §10. -->
+KP1 is terminal-only: no channel and no tick. Channels come in KP2, and the tick with its user timer comes from curator-playbook PC3. The tick is called every minute by a user-level system timer, a launchd agent or a systemd user timer, and the main loop takes it over later *(decided 2026-09-24)*. Which step takes the timer over, and whether the main loop replaces the timer or calls tick on its own schedule, are open.
 
 | Step | Delivers |
 | --- | --- |
