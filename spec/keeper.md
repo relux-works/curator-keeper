@@ -679,7 +679,7 @@ Asking the person about every change is safe and tiring. The main loop asks the 
   - new fields that no guard reads;
   - estimates, helpers, work-in-progress limits on agent-owned steps, model preferences, descriptions;
   - a named tool, whose later updates then follow the update policy (§12.1);
-  - installing audited skills.
+  - new audited versions of bound role skills.
 - **Never a grant.** People and approvers, thresholds, money, human-owned steps, delegations, data and signature policy always need a touch.
 - **Structure changes batch.** A change to a process's steps and transitions waits for one touch, and one touch covers every pending change: a week of the designer's improvements is one touch, with the change analyst's explanation of what each change does.
 - **Grants stay visible.** The person revokes a grant at once with `keeper revoke`; it is a narrowing. Grants come up for review monthly in `keeper review`, and a grant the person keeps confirming is sealed and no longer asked about until it is revoked.
