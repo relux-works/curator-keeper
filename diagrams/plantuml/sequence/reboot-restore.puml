@@ -1,7 +1,7 @@
 @startuml reboot-restore
 !include ../_includes/theme.puml
 
-' After a reboot (or at any login, or by hand): the login agent runs
+' After a reboot (on the first login after a fresh boot, or by hand): the login agent runs
 ' keeper up, the single entry point that brings the node back. The session
 ' host starts, the main loop's session resumes, each owned process's root
 ' orchestrator resumes from its goal and park note, queued doorbells are
@@ -24,8 +24,8 @@ participant "Café root orchestrator" as cafe $AGENT
 database "Boards\n(goals, park notes)" as boards $COMMITTED
 actor "Person" as person $PERSON
 
-== Login ==
-agent -> up : run at login (idempotent)
+== First login after a fresh boot ==
+agent -> up : run on the first login after a fresh boot\n(idempotent; later logins do not restore,\na manual keeper up works at any time)
 up -> host : start
 host -> host : read the session registry
 
