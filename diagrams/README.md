@@ -29,7 +29,7 @@ diagrams/
 
 | Tool | Used for | Install |
 | --- | --- | --- |
-| PlantUML (the renders above: 1.2026.6) | turns each `.puml` source into SVG and PNG | `brew install plantuml`, or the JAR: `curl -L -o plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar` |
+| PlantUML (the renders above: 1.2026.6, except `installation-and-first-run` and `reboot-restore`: 1.2026.8) | turns each `.puml` source into SVG and PNG | `brew install plantuml`, or the JAR: `curl -L -o plantuml.jar https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar` |
 | Graphviz `dot` (the renders above: 14.0.4) | the layout engine PlantUML uses for deployment diagrams | `brew install graphviz` |
 
 `plantuml -testdot` checks that PlantUML finds Graphviz.

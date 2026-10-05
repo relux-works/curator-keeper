@@ -86,7 +86,10 @@ endif
 from published packages; the designer creates one;
 :The person confirms (companion app or OS authentication);
 :The main loop starts the process's root orchestrator;
-:Register the login agent that runs <i>keeper up</i> at every login;
+:Register the login agent for <i>keeper up</i>.
+It restores automatically only on the first
+login after a fresh boot, and a manual
+<i>keeper up</i> works at any time;
 stop
 
 @enduml
