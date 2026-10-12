@@ -1,6 +1,6 @@
 # Main loop: specification
 
-Status: **DRAFT v0.5.1**, 2026-09-28. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Command-line shape: wiki `research/cli-shaping-review.md`, adopted 2026-09-27. Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3), §19 (v0.3 → v0.4), §20 (v0.4 → v0.5) and §21 (v0.5 → v0.5.1).
+Status: **DRAFT v0.6**, 2026-10-12. Not normative. Repository `curator-keeper`. Track: [`track.md`](track.md). Diagrams: [`../diagrams/`](../diagrams/). Earlier research: wiki `research/keeper-and-process-lifecycle.md` and `research/agent-loop.md`; roadmap line KP (`wiki/roadmap/ecosystem-roadmap.md` §5). Command-line shape: wiki `research/cli-shaping-review.md`, adopted 2026-09-27. Change logs: §16 (v0 → v0.1), §17 (v0.1 → v0.2), §18 (v0.2 → v0.3), §19 (v0.3 → v0.4), §20 (v0.4 → v0.5), §21 (v0.5 → v0.5.1) and §22 (v0.5.1 → v0.6).
 
 One person runs several processes on one machine: a family calendar, the smart home, a hobby project, a small café. Each process has its own playbook, board and root orchestrator (curator-playbook `spec/process-configuration.md`). Something has to sit above them. It must:
 
@@ -625,6 +625,99 @@ When no process takes a request, the main loop matches it against published proc
 
 The main loop does not relay work between processes. Processes hand work to each other directly: by board records on one board, and by waggle across boards (curator-playbook §6.5). The main loop learns of it from reports when a person must be involved.
 
+### 10.8 Obligations and custody: the keeper core *(proposed, 2026-10-12; the first slice of R243, package B)*
+
+**Why.** In the lost-watch incidents of October 2026, supervisors lost track of what they owed and who held what (skill-project-management STORY-261012-1frud4):
+
+- custody went to a session that never acted (P01, BUG-261012-on69s4);
+- an idle parent missed a child waiting on it (P04, BUG-261012-3grk0w);
+- watches had no replay and no unhealthy state (P05, BUG-261012-1ikhxj);
+- compaction kept stale watch state and dropped the deadline date (P06, BUG-261012-2f684f);
+- a stopped continuation left a shared resource degraded with no follow-up (P13, BUG-261012-wysevu, reusable part only).
+
+This section is the reusable core that closes them: one durable obligation ledger that the keeper owns.
+
+**Three packages, one ledger** *(agreed with Alexis's meta-keeper, 2026-10-12)*:
+
+- **B, this section (curator-keeper).** The obligation ledger and deadline execution: midpoint and expiry checks, escalation, replay after a restart, observer health. It is the only ledger.
+- **D, transport (a2a).**
+  - Ask marks on the wire, with validation: `blocking`, `blocks`, `non-blocking`, `assume`.
+  - A full-UTC reply-by, carried end to end.
+  - A `questions` read of open asks.
+  - D holds no durable obligation state and runs no timer that decides an escalation. Its wire format freezes only after the spec owner has reviewed it against the schema below.
+- **C, evidence (task-board).** Adapters that feed run events and first-action and readiness evidence into the ledger. C holds no ledger and no deadline logic.
+- In the first slice, C and D are fixtures.
+
+**What the ledger holds.**
+
+- **Obligations.** "X owes Y outcome O by deadline D".
+- **Custody of duties.** Who currently holds a duty, for example "operate the daily witness job on host H".
+- **References by id, never copies.** These are ids only:
+  - execution state, owned by `swarma-dispatcher` and the session host;
+  - run state, owned by task-board;
+  - message state, owned by a2a.
+  An execution id, a `RUN-…` id, a Matrix event id or a commit is enough.
+- **One writer.** The keeper process of the node writes the ledger. Records are only appended, and the current state is a fold over them. The keeper replays the whole ledger at every start.
+
+**Records** *(schema v1; field names are settled in the review of this section)*:
+
+| Record | Fields | Notes |
+| --- | --- | --- |
+| `obligation.opened` | `id`, `holder`, `beneficiary`, `kind` (`answer`, `duty`, `delivery`, `review`, `authority`), `summary`, `mark` (D's ask mark), `midpoint`, `deadline` | from a D ask, a C event or a person |
+| `custody.dispatched` | `obligation`, `from`, `to`, `accept_by`, `act_by` | a hand-over |
+| `custody.accepted` | `obligation`, `by` | the receiver acknowledges |
+| `custody.first_action` | `obligation`, `by`, `evidence` (a C reference) | the first real action; a reply alone is not one |
+| `obligation.fulfilled` | `obligation`, `by`, `evidence` | closes the obligation |
+| `obligation.expired` | `obligation`, `escalated_to` | escalates; never closes the work |
+| `holder.unavailable` | `holder`, `reason` (`parked`, `rotated`, `rate_limited`, `host_down`, `unknown`) | for example, a PARK order |
+| `obligation.orphaned` | `obligation`, `previous_holder`, `escalated_to` | written at once after `holder.unavailable` |
+| `authority.requested` | `id`, `child`, `parent`, `question`, `mark`, `deadline` | a child waits on its parent |
+| `authority.answered` | `request`, `by`, `decision` | |
+| `observer.health` | `observer`, `state` (`healthy`, `degraded`, `lost`), `inputs` | |
+| `resource.degraded` / `resource.restored` | `resource`, `holder`, `follow_up_by` | a degraded shared resource always has a holder and a deadline |
+
+- **Common fields.** Every record carries `seq` (monotonic within the ledger), `at` (RFC3339 UTC with `Z`), `actor` (the writer's identity) and `source` (the event that caused it: a Matrix event id, a board event or a commit).
+- **Signatures are a seam.** Later versions sign each record through the trust module and the credential broker. Version 1 records the actor and the source only.
+
+**Custody.**
+
+- **The states.** A hand-over moves from dispatched to accepted, then to first action, and ends in fulfilled or expired.
+- **A hand-over completes only at the first action.** Until then the previous holder keeps the duty (P01).
+- **Missed deadlines.** A missing acceptance by `accept_by`, or a missing first action by `act_by`, escalates to the dispatching holder's parent. The duty does not move.
+
+**Deadlines.**
+
+- **Full UTC everywhere.** Every deadline is full RFC3339 UTC; no field holds a time without its date (P06).
+- **Two checks.** At the midpoint the keeper re-checks the holder's evidence; at the deadline it escalates.
+- **Expiry only escalates.** It never closes an obligation, never reassigns one without a receipt, and never deletes anything.
+- **The clock.** Deadlines are compared with the node's UTC clock under a monotonic guard. A backwards clock step never extends a deadline (the authenticated time source of the installer, review finding F-21).
+
+**Escalation** runs orchestrator, then product keeper, then meta-keeper, then the human owner. Each step is a record with `escalated_to`. The receiver gets an a2a message that carries a mark and a reply-by (D).
+
+**Holder unavailability.**
+
+- **The rule.** A holder can become unavailable: parked by a PARK order, rotated, rate-limited, or its host down. Every open obligation it holds is then orphaned at once and escalates.
+- **Addressed asks never wait.** An addressed ask to a parked session must not sit unanswered. On 2026-10-08, asks addressed to a parked session sat unanswered for four days; that case is the negative-control plant for this rule.
+
+**A child waiting on its parent (P04).** An `authority.requested` record makes the child's blocked state visible. The parent answers or escalates by the deadline, and the keeper wakes an idle parent that has an open authority request.
+
+**Replay and compaction (P05, P06).** The keeper rebuilds its state from the ledger at every start and after every compaction of its harness. It never takes obligations or deadlines from conversation memory. The watchdog (§12.2) requests the replay after a compaction.
+
+**Observer health.**
+
+- **Inputs.** a2a status (`#status`), D's `questions` output and C's evidence.
+- **Lost.** An observer is `lost` when no receipt or heartbeat arrives before a deadline. The keeper escalates a lost observer like an orphaned holder.
+- **Liveness stays in a2a.** The ledger does not re-implement it.
+
+**Acceptance for the first slice.** Each transition needs a positive control. These negative-control plants are required:
+
+- a time-only comparison (P06);
+- a suppressed first action (P01);
+- a replay lost after a restart (P05);
+- an idle parent with a waiting child (P04);
+- a parked holder with an open addressed ask;
+- a degraded shared resource without a holder (P13).
+
 ## 11. The person
 
 ### 11.1 Channels *(proposed)*
@@ -731,6 +824,7 @@ A system role in the main loop's own process, with a small deterministic core.
   - when a provider's limit is exhausted, it parks the sessions that depend on it and resumes them after the window, or asks model selection for another eligible model;
   - it reports anomalies to the main loop: a session that stopped moving, a context that fills unusually fast.
 - **It never moves work.** It parks and reports; the orchestrators decide.
+- **After a compaction** it also asks the keeper to replay the obligation ledger (§10.8).
 
 ### 12.3 Observability agents and worker pools *(idea, from the operators' call of 2026-09-29; not planned)*
 
@@ -991,3 +1085,13 @@ Applied from the operator's answers of 2026-09-28:
 | --- | --- |
 | Our own loop is postponed; the main loop runs on the existing harnesses, and harness abstraction is named as a core advantage and a selling point; replaces the 2026-09-24 wording | §7.7 |
 | KP1 is terminal-only: no channel and no tick | §15.1 |
+
+## 22. Change log: v0.5.1 → v0.6
+
+Applied from R243 (Ivan, «берем это») and the spec owner's slice scope agreed with Alexis's meta-keeper on 2026-10-12:
+
+| Change | Where |
+| --- | --- |
+| The obligation ledger becomes the keeper core: obligations and duty custody, schema v1, custody completing at first action, full-UTC deadlines with a midpoint check, expiry that only escalates, holder unavailability that orphans and escalates, child-to-parent authority requests, replay instead of conversation memory, observer health, a signature seam, and acceptance plants per lost-watch bug | §10.8 |
+| The B/C/D boundary: the keeper core owns the only ledger; a2a carries ask marks, reply-by and a questions read; task-board supplies evidence adapters | §10.8 |
+| The watchdog requests a ledger replay after a compaction | §12.2 |
